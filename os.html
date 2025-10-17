@@ -1,0 +1,3688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudOS - A Beautiful Web Operating System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            position: relative;
+        }
+
+        .wallpaper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                    radial-gradient(circle at 80% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                    radial-gradient(circle at 20% 20%, rgba(74, 144, 226, 0.3), transparent 50%),
+                    radial-gradient(circle at 60% 80%, rgba(138, 43, 226, 0.2), transparent 50%),
+                    linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
+            /* animation: wallpaperShift 30s ease infinite; */
+        }
+
+        @keyframes wallpaperShift {
+            0%, 100% { 
+                background: 
+                    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(74, 144, 226, 0.3), transparent 50%),
+                    radial-gradient(circle at 40% 20%, rgba(138, 43, 226, 0.2), transparent 50%),
+                    linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            }
+            50% { 
+                background: 
+                    radial-gradient(circle at 80% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                    radial-gradient(circle at 20% 20%, rgba(74, 144, 226, 0.3), transparent 50%),
+                    radial-gradient(circle at 60% 80%, rgba(138, 43, 226, 0.2), transparent 50%),
+                    linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
+            }
+        }
+
+        .menu-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 1000;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .menu-left {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .menu-right {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .apple-logo {
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .apple-logo i {
+            font-size: 16px;
+        }
+
+        .menu-item {
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .dock {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 12px;
+            display: flex;
+            gap: 8px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .dock-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dock-icon:hover {
+            transform: translateY(-12px) scale(1.15);
+        }
+
+        .dock-icon.active::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .window {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(50px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+            min-width: 400px;
+            min-height: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .window.active {
+            display: flex;
+            z-index: 100;
+        }
+
+        .window.maximized {
+            top: 28px !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: calc(100% - 28px - 80px) !important;
+            border-radius: 0;
+        }
+
+        .window-header {
+            height: 40px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            cursor: move;
+            user-select: none;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .window-control:hover {
+            opacity: 0.7;
+        }
+
+        .control-close { background: #ff5f57; }
+        .control-minimize { background: #ffbd2e; }
+        .control-maximize { background: #28ca42; }
+
+        .window-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .window-content {
+            flex: 1;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(30px);
+        }
+
+        /* Finder Styles */
+        .finder-sidebar {
+            width: 200px;
+            background: rgba(245, 245, 247, 0.95);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+        .finder-main {
+            display: flex;
+            flex: 1;
+        }
+
+        .finder-content {
+            flex: 1;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 20px;
+            align-content: start;
+        }
+
+        .file-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .file-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .file-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        .file-name {
+            font-size: 12px;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .sidebar-section {
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-item {
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar-item.active {
+            background: rgba(0, 122, 255, 0.15);
+            color: #007aff;
+        }
+
+        /* Terminal Styles */
+        .terminal-content {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            padding: 16px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .terminal-line {
+            margin-bottom: 4px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .terminal-prompt {
+            color: #00ff00;
+            margin-right: 8px;
+            user-select: none;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            align-items: center;
+        }
+
+        .terminal-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #00ff00;
+            font-family: inherit;
+            font-size: inherit;
+            flex: 1;
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: #00ff00;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Code Editor Styles */
+        .code-editor-toolbar {
+            background: #f5f5f7;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 8px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .code-editor-btn {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .code-editor-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .code-editor-content {
+            height: calc(100% - 49px);
+            display: flex;
+        }
+
+        .code-line-numbers {
+            background: #f8f8f8;
+            padding: 16px 8px;
+            text-align: right;
+            color: #999;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            user-select: none;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            min-width: 50px;
+        }
+
+        .code-textarea {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            outline: none;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 20px;
+            resize: none;
+            background: white;
+            color: #333;
+        }
+
+        /* Music Player Styles */
+        .music-player {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .music-header {
+            padding: 40px 40px 20px;
+            color: white;
+        }
+
+        .album-art {
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 24px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .song-info {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .song-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .song-artist {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .music-controls {
+            padding: 0 40px 40px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 2px;
+            width: 30%;
+            transition: width 0.1s;
+        }
+
+        .progress-times {
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 24px;
+        }
+
+        .playback-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .control-btn.play {
+            width: 64px;
+            height: 64px;
+            background: white;
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .control-btn.active-btn {
+            background: rgba(255, 255, 255, 0.4);
+            color: #fff;
+        }
+
+        .playlist {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .playlist-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: background 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .playlist-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .playlist-item.playing {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        /* Gallery Styles */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+
+        /* Calculator Styles */
+        .calculator {
+            display: flex;
+            flex-direction: column;
+            background: #1c1c1e;
+            padding: 20px;
+        }
+
+        .calc-display {
+            background: transparent;
+            color: white;
+            font-size: 64px;
+            text-align: right;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-weight: 300;
+            min-height: 100px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+        }
+
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .calc-btn {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            color: white;
+            font-weight: 400;
+        }
+
+        .calc-btn:hover {
+            opacity: 0.7;
+        }
+
+        .calc-btn.number {
+            background: #505050;
+        }
+
+        .calc-btn.operator {
+            background: #ff9500;
+        }
+
+        .calc-btn.function {
+            background: #a6a6a6;
+            color: black;
+        }
+
+        .calc-btn.zero {
+            grid-column: span 2;
+            border-radius: 50px;
+        }
+
+        /* Notes App */
+        .notes-container {
+            display: flex;
+            height: 100%;
+        }
+
+        .notes-sidebar {
+            width: 280px;
+            background: #f5f5f7;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .note-item {
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .note-item:hover {
+            background: #f0f0f0;
+        }
+
+        .note-item.active {
+            background: #e5e5e7;
+        }
+
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .note-preview {
+            font-size: 12px;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .note-date {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .notes-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-editor-title {
+            padding: 20px 20px 0;
+            border: none;
+            outline: none;
+            font-size: 24px;
+            font-weight: 700;
+            background: transparent;
+        }
+
+        .notes-editor-content {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+            resize: none;
+            background: transparent;
+        }
+
+        /* Weather App */
+        .weather-app {
+            background: linear-gradient(180deg, #4a90e2 0%, #50a7e8 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .weather-icon {
+            font-size: 120px;
+            margin-bottom: 24px;
+        }
+
+        .weather-temp {
+            font-size: 72px;
+            font-weight: 300;
+            margin-bottom: 16px;
+        }
+
+        .weather-condition {
+            font-size: 24px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        .weather-location {
+            font-size: 18px;
+            opacity: 0.8;
+            margin-bottom: 32px;
+        }
+
+        .weather-details {
+            display: flex;
+            gap: 40px;
+            margin-top: 32px;
+        }
+
+        .weather-detail-item {
+            text-align: center;
+        }
+
+        .weather-detail-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .weather-detail-value {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* Calendar App */
+        .calendar-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .calendar-header {
+            padding: 20px;
+            background: #f5f5f7;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calendar-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .calendar-nav-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .calendar-nav-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .calendar-grid {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+            color: #666;
+            padding: 8px;
+        }
+
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .calendar-day:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .calendar-day.today {
+            background: #007aff;
+            color: white;
+        }
+
+        .calendar-day.other-month {
+            color: #ccc;
+        }
+
+        /* Text Editor */
+        .text-editor {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .text-editor-toolbar {
+            background: #f5f5f7;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .text-editor-textarea {
+            flex: 1;
+            padding: 24px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.8;
+            resize: none;
+        }
+
+        /* Settings */
+        .settings-container {
+            display: flex;
+            height: 100%;
+        }
+
+        .settings-sidebar {
+            width: 240px;
+            background: #f5f5f7;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .settings-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .settings-section {
+            margin-bottom: 32px;
+        }
+
+        .settings-section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: #f5f5f7;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .settings-item-label {
+            font-size: 14px;
+        }
+
+        .settings-toggle {
+            width: 48px;
+            height: 28px;
+            background: #ccc;
+            border-radius: 14px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .settings-toggle.active {
+            background: #007aff;
+        }
+
+        .settings-toggle::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.2s;
+        }
+
+        .settings-toggle.active::after {
+            left: 22px;
+        }
+
+        /* Messages App */
+        .messages-container {
+            display: flex;
+            height: 100%;
+        }
+
+        .messages-list {
+            width: 320px;
+            background: #f5f5f7;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .messages-search {
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .messages-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            outline: none;
+            background: white;
+            font-size: 14px;
+        }
+
+        .message-preview {
+            padding: 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .message-preview:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .message-preview.active {
+            background: white;
+        }
+
+        .message-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .messages-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .messages-header {
+            padding: 16px;
+            background: #f5f5f7;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+        }
+
+        .messages-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .message-bubble {
+            max-width: 60%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+        }
+
+        .message-bubble.sent {
+            background: #007aff;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-bubble.received {
+            background: #e5e5ea;
+            color: black;
+            border-bottom-left-radius: 4px;
+        }
+
+        .messages-input {
+            padding: 16px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 12px;
+        }
+
+        .messages-input input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .messages-send-btn {
+            padding: 10px 20px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Safari Browser */
+        .safari-toolbar {
+            background: #f5f5f7;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .safari-nav-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .safari-nav-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .safari-url-bar {
+            flex: 1;
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .safari-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: white;
+        }
+
+        /* Spotlight Search */
+        .spotlight {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            z-index: 2000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .spotlight.active {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .spotlight-input {
+            width: 100%;
+            padding: 20px 24px;
+            border: none;
+            outline: none;
+            font-size: 24px;
+            background: transparent;
+        }
+
+        .spotlight-results {
+            max-height: 400px;
+            overflow-y: auto;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .spotlight-result {
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .spotlight-result:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .spotlight-result-icon {
+            font-size: 32px;
+        }
+
+        .spotlight-result-info {
+            flex: 1;
+        }
+
+        .spotlight-result-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .spotlight-result-subtitle {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Clock App */
+        .clock-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+
+        .clock-display {
+            font-size: 96px;
+            font-weight: 300;
+            margin-bottom: 16px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .clock-date {
+            font-size: 24px;
+            opacity: 0.8;
+        }
+
+        .clock-tabs {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+
+        .clock-tab {
+            flex: 1;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .clock-tab:last-child {
+            border-right: none;
+        }
+
+        .clock-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .clock-tab.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Loading Animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Notification */
+        .notification {
+            position: absolute;
+            top: 36px;
+            right: 16px;
+            width: 360px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            z-index: 3000;
+            transform: translateX(400px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .notification-icon {
+            font-size: 24px;
+        }
+
+        .notification-app {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .notification-time {
+            margin-left: auto;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .notification-body {
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(50px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.18);
+            padding: 8px;
+            z-index: 4000;
+            display: none;
+            min-width: 200px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .context-menu.show {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .context-menu-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+        }
+
+        .context-menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 4px 0;
+        }
+
+        /* Login Screen - Hidden */
+        .login-screen {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-avatar"><i class="fas fa-user"></i></div>
+        <div class="login-name">Guest User</div>
+        <input type="password" class="login-password" id="loginPassword" placeholder="Enter password (or just press Enter)">
+        <div class="login-hint">Hint: Press Enter to continue</div>
+    </div>
+
+    <!-- Wallpaper -->
+    <div class="wallpaper"></div>
+
+    <!-- Menu Bar -->
+    <div class="menu-bar">
+        <div class="menu-left">
+            <div class="apple-logo"><i class="fab fa-apple"></i></div>
+            <div class="menu-item" id="appName">CloudOS</div>
+            <div class="menu-item">File</div>
+            <div class="menu-item">Edit</div>
+            <div class="menu-item">View</div>
+            <div class="menu-item">Go</div>
+            <div class="menu-item">Window</div>
+            <div class="menu-item">Help</div>
+        </div>
+        <div class="menu-right">
+            <div class="menu-item"><i class="fas fa-battery-full"></i> 100%</div>
+            <div class="menu-item"><i class="fas fa-wifi"></i></div>
+            <div class="menu-item" id="searchBtn"><i class="fas fa-search"></i></div>
+            <div class="menu-item" id="menuClock">12:00 PM</div>
+        </div>
+    </div>
+
+    <!-- Spotlight Search -->
+    <div class="spotlight" id="spotlight">
+        <input type="text" class="spotlight-input" id="spotlightInput" placeholder="Spotlight Search">
+        <div class="spotlight-results" id="spotlightResults"></div>
+    </div>
+
+    <!-- Windows Container -->
+    <div id="windowsContainer"></div>
+
+    <!-- Dock -->
+    <div class="dock" id="dock">
+        <div class="dock-icon" data-app="finder" title="Finder"><i class="fas fa-folder"></i></div>
+        <div class="dock-icon" data-app="safari" title="Safari"><i class="fas fa-compass"></i></div>
+        <div class="dock-icon" data-app="messages" title="Messages"><i class="fas fa-comments"></i></div>
+        <div class="dock-icon" data-app="mail" title="Mail"><i class="fas fa-envelope"></i></div>
+        <div class="dock-icon" data-app="music" title="Music"><i class="fas fa-music"></i></div>
+        <div class="dock-icon" data-app="photos" title="Photos"><i class="fas fa-images"></i></div>
+        <div class="dock-icon" data-app="notes" title="Notes"><i class="fas fa-sticky-note"></i></div>
+        <div class="dock-icon" data-app="calendar" title="Calendar"><i class="fas fa-calendar-alt"></i></div>
+        <div class="dock-icon" data-app="terminal" title="Terminal"><i class="fas fa-terminal"></i></div>
+        <div class="dock-icon" data-app="code" title="Code Editor"><i class="fas fa-code"></i></div>
+        <div class="dock-icon" data-app="textedit" title="TextEdit"><i class="fas fa-file-alt"></i></div>
+        <div class="dock-icon" data-app="calculator" title="Calculator"><i class="fas fa-calculator"></i></div>
+        <div class="dock-icon" data-app="weather" title="Weather"><i class="fas fa-cloud-sun"></i></div>
+        <div class="dock-icon" data-app="clock" title="Clock"><i class="fas fa-clock"></i></div>
+        <div class="dock-icon" data-app="settings" title="Settings"><i class="fas fa-cog"></i></div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item"><i class="fas fa-folder-open"></i> Open</div>
+        <div class="context-menu-item"><i class="fas fa-copy"></i> Copy</div>
+        <div class="context-menu-item"><i class="fas fa-cut"></i> Cut</div>
+        <div class="context-menu-item"><i class="fas fa-paste"></i> Paste</div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item"><i class="fas fa-trash"></i> Delete</div>
+        <div class="context-menu-item"><i class="fas fa-info-circle"></i> Get Info</div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <div class="notification-header">
+            <span class="notification-icon"><i class="fas fa-bell"></i></span>
+            <span class="notification-app">CloudOS</span>
+            <span class="notification-time">Now</span>
+        </div>
+        <div class="notification-body">Welcome to CloudOS! Explore all the features.</div>
+    </div>
+
+    <script>
+        // System State
+        const state = {
+            windows: {},
+            activeWindow: null,
+            windowZIndex: 100,
+            fileSystem: {
+                'Documents': [
+                    { name: 'Resume.docx', type: 'file', icon: '<i class="fas fa-file-word"></i>', size: '45 KB', modified: 'Oct 15, 2025' },
+                    { name: 'Project Plan.pdf', type: 'file', icon: '<i class="fas fa-file-pdf"></i>', size: '1.2 MB', modified: 'Oct 14, 2025' },
+                    { name: 'Budget 2024.xlsx', type: 'file', icon: '<i class="fas fa-file-excel"></i>', size: '89 KB', modified: 'Oct 12, 2025' },
+                    { name: 'Meeting Notes.txt', type: 'file', icon: '<i class="fas fa-file-alt"></i>', size: '12 KB', modified: 'Oct 16, 2025' },
+                    { name: 'Presentation.pptx', type: 'file', icon: '<i class="fas fa-file-powerpoint"></i>', size: '3.4 MB', modified: 'Oct 11, 2025' }
+                ],
+                'Downloads': [
+                    { name: 'installer.dmg', type: 'file', icon: '<i class="fas fa-compact-disc"></i>', size: '256 MB', modified: 'Oct 17, 2025' },
+                    { name: 'photo.jpg', type: 'file', icon: '<i class="fas fa-image"></i>', size: '2.1 MB', modified: 'Oct 16, 2025' },
+                    { name: 'document.zip', type: 'file', icon: '<i class="fas fa-file-archive"></i>', size: '15 MB', modified: 'Oct 15, 2025' },
+                    { name: 'video.mp4', type: 'file', icon: '<i class="fas fa-file-video"></i>', size: '124 MB', modified: 'Oct 13, 2025' }
+                ],
+                'Desktop': [
+                    { name: 'Work', type: 'folder', icon: '<i class="fas fa-folder"></i>', items: 12, modified: 'Oct 16, 2025' },
+                    { name: 'Personal', type: 'folder', icon: '<i class="fas fa-folder"></i>', items: 8, modified: 'Oct 15, 2025' },
+                    { name: 'Projects', type: 'folder', icon: '<i class="fas fa-folder"></i>', items: 24, modified: 'Oct 17, 2025' }
+                ],
+                'Pictures': [
+                    { name: 'Vacation 2024', type: 'folder', icon: '<i class="fas fa-folder"></i>', items: 156, modified: 'Oct 10, 2025' },
+                    { name: 'Family Photos', type: 'folder', icon: '<i class="fas fa-folder"></i>', items: 89, modified: 'Oct 8, 2025' },
+                    { name: 'Screenshots', type: 'folder', icon: '<i class="fas fa-folder"></i>', items: 43, modified: 'Oct 17, 2025' }
+                ]
+            },
+            currentFolder: 'Documents',
+            finderViewMode: 'grid',
+            notes: [
+                { id: 1, title: 'Welcome to CloudOS', content: 'This is a fully functional web-based operating system with amazing features!', date: 'Oct 17, 2025' },
+                { id: 2, title: 'Shopping List', content: 'Milk, Eggs, Bread, Coffee, Fruits', date: 'Oct 16, 2025' },
+                { id: 3, title: 'Project Ideas', content: '1. Build a web OS\n2. Create AI assistant\n3. Develop mobile app', date: 'Oct 15, 2025' },
+                { id: 4, title: 'Meeting Agenda', content: 'Discuss Q4 goals\nTeam performance review\nBudget allocation', date: 'Oct 14, 2025' },
+                { id: 5, title: 'Code Snippets', content: 'function quickSort(arr) {\n  // Implementation here\n}', date: 'Oct 13, 2025' }
+            ],
+            currentNote: 1,
+            nextNoteId: 6,
+            playlist: [
+                { id: 1, title: 'Sunrise', artist: 'CloudOS Orchestra', duration: '3:45', album: 'Morning Vibes' },
+                { id: 2, title: 'Digital Dreams', artist: 'Synth Wave', duration: '4:20', album: 'Neon Nights' },
+                { id: 3, title: 'Moonlight Sonata', artist: 'Classical Mix', duration: '5:15', album: 'Piano Classics' },
+                { id: 4, title: 'Electric Love', artist: 'Pop Stars', duration: '3:30', album: 'Hit Collection' },
+                { id: 5, title: 'Ocean Waves', artist: 'Nature Sounds', duration: '6:12', album: 'Relaxation' },
+                { id: 6, title: 'Code & Coffee', artist: 'Lo-Fi Beats', duration: '4:45', album: 'Study Mix' },
+                { id: 7, title: 'Starlight', artist: 'Ambient Flow', duration: '5:33', album: 'Night Sky' },
+                { id: 8, title: 'Thunder', artist: 'Rock Legends', duration: '3:58', album: 'Greatest Hits' }
+            ],
+            currentSong: 0,
+            isPlaying: false,
+            volume: 75,
+            isShuffle: false,
+            isRepeat: false,
+            terminalHistory: [],
+            codeContent: '// Welcome to CloudOS Code Editor\n// Start coding your dreams!\n\nfunction helloWorld() {\n    console.log("Hello, CloudOS!");\n    return "Welcome to the future!";\n}\n\nhelloWorld();',
+            calcDisplay: '0',
+            calcPrevValue: null,
+            calcOperation: null,
+            calcMemory: 0,
+            calcMode: 'basic',
+            messages: [
+                { id: 1, name: 'John Doe', preview: 'Hey! How are you?', active: true, time: '2:34 PM', avatar: 'JD', unread: 0 },
+                { id: 2, name: 'Jane Smith', preview: 'Meeting at 3 PM tomorrow', time: '1:15 PM', avatar: 'JS', unread: 2 },
+                { id: 3, name: 'Team Group', preview: 'Project update available', time: 'Yesterday', avatar: 'TG', unread: 5 },
+                { id: 4, name: 'Sarah Wilson', preview: 'Thanks for the help!', time: 'Monday', avatar: 'SW', unread: 0 },
+                { id: 5, name: 'Mike Johnson', preview: 'Let\'s catch up soon', time: 'Sunday', avatar: 'MJ', unread: 1 }
+            ],
+            currentChat: [
+                { text: 'Hey! How are you?', sent: false },
+                { text: 'I\'m great! Just exploring CloudOS', sent: true },
+                { text: 'It looks amazing!', sent: false }
+            ],
+            safariTabs: [
+                { id: 1, title: 'CloudOS Browser', url: '', isHome: true }
+            ],
+            activeTab: 1,
+            nextTabId: 2,
+            emails: [
+                { id: 1, from: 'CloudOS Team', fromEmail: 'team@cloudos.io', subject: 'Welcome to CloudOS', preview: 'Thank you for using CloudOS! We hope you enjoy...', date: 'Oct 17, 9:30 AM', read: true, starred: false, folder: 'inbox', body: 'Dear User,\n\nThank you for exploring CloudOS - a fully functional web-based operating system!\n\nFeatures included:\n- File Manager (Finder)\n- Terminal with Python support\n- Code Editor with syntax highlighting\n- Music Player\n- Photo Gallery\n- And much more!\n\nEnjoy your experience!\n\nBest regards,\nThe CloudOS Team' },
+                { id: 2, from: 'John Smith', fromEmail: 'john@example.com', subject: 'Meeting Tomorrow', preview: 'Hi, just a reminder about our meeting tomorrow...', date: 'Oct 17, 8:15 AM', read: true, starred: true, folder: 'inbox', body: 'Hi,\n\nJust a reminder about our meeting tomorrow at 2 PM.\n\nWe will discuss:\n- Q4 goals\n- Budget allocation\n- Team structure\n\nSee you there!\n\nJohn' },
+                { id: 3, from: 'Sarah Johnson', fromEmail: 'sarah@company.com', subject: 'Project Update', preview: 'The new features have been deployed successfully...', date: 'Oct 16, 4:20 PM', read: false, starred: false, folder: 'inbox', body: 'Hi Team,\n\nThe new features have been deployed successfully to production.\n\nChanges include:\n- Enhanced UI components\n- Performance optimizations\n- Bug fixes\n\nPlease test and report any issues.\n\nThanks,\nSarah' },
+                { id: 4, from: 'GitHub', fromEmail: 'noreply@github.com', subject: 'New PR on your repository', preview: 'A new pull request has been opened...', date: 'Oct 16, 2:45 PM', read: false, starred: false, folder: 'inbox', body: 'Hello,\n\nA new pull request has been opened on your repository "cloudos".\n\nPR #42: Add dark mode support\n\nReview it at: github.com/repos/cloudos/pull/42\n\nGitHub Team' },
+                { id: 5, from: 'Newsletter', fromEmail: 'news@techdigest.com', subject: 'Weekly Tech Digest', preview: 'This week in technology: AI breakthroughs...', date: 'Oct 15, 10:00 AM', read: true, starred: false, folder: 'inbox', body: 'This Week in Technology\n\n1. AI Breakthroughs in Healthcare\n2. New Web Standards Released\n3. Cloud Computing Trends\n4. Cybersecurity Updates\n\nRead more at techdigest.com' },
+                { id: 6, from: 'Mike Chen', fromEmail: 'mike@startup.io', subject: 'Coffee Meetup?', preview: 'Hey! Want to grab coffee this weekend?', date: 'Oct 15, 9:30 AM', read: true, starred: true, folder: 'inbox', body: 'Hey!\n\nWant to grab coffee this weekend? Would love to catch up and discuss the new project ideas.\n\nLet me know what works for you!\n\nMike' }
+            ],
+            currentEmail: 1,
+            emailFolder: 'inbox',
+            photoAlbums: ['All Photos', 'Favorites', 'Nature', 'City', 'People', 'Screenshots'],
+            currentAlbum: 'All Photos',
+            photoViewMode: 'grid',
+            codeFiles: [
+                { name: 'app.js', content: '// Main application file\nconst express = require(\'express\');\nconst app = express();\n\napp.get(\'/\', (req, res) => {\n    res.send(\'Hello World!\');\n});\n\napp.listen(3000, () => {\n    console.log(\'Server running on port 3000\');\n});', language: 'javascript' },
+                { name: 'styles.css', content: '/* Global Styles */\nbody {\n    margin: 0;\n    padding: 0;\n    font-family: Arial, sans-serif;\n    background: #f5f5f5;\n}\n\n.container {\n    max-width: 1200px;\n    margin: 0 auto;\n    padding: 20px;\n}', language: 'css' },
+                { name: 'index.html', content: '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>CloudOS</title>\n</head>\n<body>\n    <h1>Welcome to CloudOS</h1>\n</body>\n</html>', language: 'html' },
+                { name: 'server.py', content: '# Python web server\nfrom flask import Flask\n\napp = Flask(__name__)\n\n@app.route(\'/\')\ndef hello():\n    return \'Hello from Python!\'\n\nif __name__ == \'__main__\':\n    app.run(debug=True)', language: 'python' }
+            ],
+            currentCodeFile: 0,
+            codeTheme: 'dark'
+        };
+
+        // App Definitions
+        const apps = {
+            finder: {
+                name: 'Finder',
+                icon: '<i class="fas fa-folder"></i>',
+                defaultSize: { width: 900, height: 600 },
+                render: (container) => {
+                    container.innerHTML = `
+                        <div style="display: flex; flex-direction: column; height: 100%;">
+                            <div style="padding: 8px 16px; background: #f5f5f7; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; gap: 12px; align-items: center;">
+                                <button class="code-editor-btn" onclick="finderGoBack()" title="Back">
+                                    <i class="fas fa-arrow-left"></i>
+                                </button>
+                                <button class="code-editor-btn" onclick="finderGoForward()" title="Forward">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                                <div style="flex: 1; padding: 6px 12px; background: white; border-radius: 6px; border: 1px solid rgba(0,0,0,0.1);">
+                                    <i class="fas fa-folder" style="color: #666; margin-right: 8px;"></i>
+                                    <span id="finderPath">${state.currentFolder}</span>
+                                </div>
+                                <button class="code-editor-btn" onclick="toggleFinderView()" title="Toggle View">
+                                    <i class="fas fa-${state.finderViewMode === 'grid' ? 'list' : 'th'}"></i>
+                                </button>
+                                <button class="code-editor-btn" title="Search">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div class="finder-main">
+                                <div class="finder-sidebar">
+                                    <div class="sidebar-section">
+                                        <div class="sidebar-title">Favorites</div>
+                                        <div class="sidebar-item ${state.currentFolder === 'Documents' ? 'active' : ''}" onclick="changeFinderFolder('Documents')">
+                                            <i class="fas fa-folder"></i> Documents
+                                        </div>
+                                        <div class="sidebar-item ${state.currentFolder === 'Downloads' ? 'active' : ''}" onclick="changeFinderFolder('Downloads')">
+                                            <i class="fas fa-download"></i> Downloads
+                                        </div>
+                                        <div class="sidebar-item ${state.currentFolder === 'Desktop' ? 'active' : ''}" onclick="changeFinderFolder('Desktop')">
+                                            <i class="fas fa-desktop"></i> Desktop
+                                        </div>
+                                        <div class="sidebar-item ${state.currentFolder === 'Pictures' ? 'active' : ''}" onclick="changeFinderFolder('Pictures')">
+                                            <i class="fas fa-images"></i> Pictures
+                                        </div>
+                                    </div>
+                                    <div class="sidebar-section">
+                                        <div class="sidebar-title">iCloud</div>
+                                        <div class="sidebar-item"><i class="fas fa-cloud"></i> iCloud Drive</div>
+                                    </div>
+                                    <div class="sidebar-section">
+                                        <div class="sidebar-title">Devices</div>
+                                        <div class="sidebar-item"><i class="fas fa-laptop"></i> MacBook Pro</div>
+                                        <div class="sidebar-item"><i class="fas fa-hdd"></i> External Drive</div>
+                                    </div>
+                                    <div class="sidebar-section">
+                                        <div class="sidebar-title">Tags</div>
+                                        <div class="sidebar-item"><span style="color: red;">●</span> Important</div>
+                                        <div class="sidebar-item"><span style="color: blue;">●</span> Work</div>
+                                        <div class="sidebar-item"><span style="color: green;">●</span> Personal</div>
+                                    </div>
+                                </div>
+                                <div class="finder-content" id="finderContent"></div>
+                            </div>
+                            <div style="padding: 8px 16px; background: #f5f5f7; border-top: 1px solid rgba(0,0,0,0.1); font-size: 11px; color: #666;">
+                                <span id="finderStatus">${state.fileSystem[state.currentFolder].length} items</span>
+                            </div>
+                        </div>
+                    `;
+
+                    renderFinderContent(container);
+                }
+            },
+            terminal: {
+                name: 'Terminal',
+                icon: '<i class="fas fa-terminal"></i>',
+                defaultSize: { width: 800, height: 500 },
+                render: (container) => {
+                    container.innerHTML = `
+                        <div class="terminal-content" id="terminalContent">
+                            <div class="terminal-line">
+                                <span style="color: #00ff00;">CloudOS Terminal v1.0</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span style="color: #00aaff;">Type 'help' for available commands</span>
+                            </div>
+                            <div class="terminal-line"></div>
+                            ${state.terminalHistory.map(line => `<div class="terminal-line">${line}</div>`).join('')}
+                            <div class="terminal-input-line">
+                                <span class="terminal-prompt">guest@cloudos:~$</span>
+                                <input type="text" class="terminal-input" id="terminalInput" autofocus>
+                                <span class="terminal-cursor"></span>
+                            </div>
+                        </div>
+                    `;
+
+                    const input = container.querySelector('#terminalInput');
+                    const content = container.querySelector('#terminalContent');
+
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            const command = input.value.trim();
+                            if (command) {
+                                executeTerminalCommand(command, content);
+                                input.value = '';
+                            }
+                        }
+                    });
+                }
+            },
+            code: {
+                name: 'Code Editor',
+                icon: '<i class="fas fa-code"></i>',
+                defaultSize: { width: 1100, height: 700 },
+                render: (container) => {
+                    const currentFile = state.codeFiles[state.currentCodeFile];
+                    const lines = currentFile.content.split('\n').length;
+                    const lineNumbers = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+
+                    const languageIcons = {
+                        'javascript': 'js-square',
+                        'python': 'python',
+                        'html': 'html5',
+                        'css': 'css3-alt'
+                    };
+
+                    container.innerHTML = `
+                        <div style="display: flex; height: 100%;">
+                            <!-- File Tree Sidebar -->
+                            <div style="width: 220px; background: ${state.codeTheme === 'dark' ? '#1e1e1e' : '#f5f5f7'}; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column;">
+                                <div style="padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); font-weight: 600; font-size: 12px; color: ${state.codeTheme === 'dark' ? '#ccc' : '#666'}; text-transform: uppercase;">
+                                    Explorer
+                                </div>
+                                <div style="flex: 1; overflow-y: auto; padding: 8px;">
+                                    <div style="font-size: 11px; color: ${state.codeTheme === 'dark' ? '#888' : '#999'}; padding: 8px 12px; text-transform: uppercase; font-weight: 600;">
+                                        Project Files
+                                    </div>
+                                    ${state.codeFiles.map((file, index) => `
+                                        <div onclick="openCodeFile(${index})" style="
+                                            padding: 8px 12px;
+                                            cursor: pointer;
+                                            background: ${index === state.currentCodeFile ? (state.codeTheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,122,255,0.1)') : 'transparent'};
+                                            border-radius: 6px;
+                                            margin: 2px 4px;
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 8px;
+                                            transition: background 0.2s;
+                                        " onmouseenter="if(${index} !== ${state.currentCodeFile}) this.style.background='${state.codeTheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}'" onmouseleave="if(${index} !== ${state.currentCodeFile}) this.style.background='transparent'">
+                                            <i class="fab fa-${languageIcons[file.language] || 'file-code'}" style="color: ${index === state.currentCodeFile ? '#007aff' : (state.codeTheme === 'dark' ? '#888' : '#666')}; font-size: 14px;"></i>
+                                            <span style="font-size: 13px; color: ${state.codeTheme === 'dark' ? (index === state.currentCodeFile ? 'white' : '#ccc') : '#333'};">${file.name}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Editor Content -->
+                            <div style="flex: 1; display: flex; flex-direction: column;">
+                                <!-- Toolbar -->
+                                <div class="code-editor-toolbar" style="background: ${state.codeTheme === 'dark' ? '#2d2d2d' : '#f5f5f7'}; border-bottom: 1px solid ${state.codeTheme === 'dark' ? '#444' : 'rgba(0,0,0,0.1)'};">
+                                    <div class="code-editor-btn" onclick="saveCodeFile()"><i class="fas fa-save"></i> Save</div>
+                                    <div class="code-editor-btn" onclick="runCode()"><i class="fas fa-play"></i> Run</div>
+                                    <div class="code-editor-btn" onclick="formatCode()"><i class="fas fa-magic"></i> Format</div>
+                                    <div style="flex: 1;"></div>
+                                    <div class="code-editor-btn" onclick="toggleCodeTheme()">
+                                        <i class="fas fa-${state.codeTheme === 'dark' ? 'sun' : 'moon'}"></i> ${state.codeTheme === 'dark' ? 'Light' : 'Dark'}
+                                    </div>
+                                    <div class="code-editor-btn" style="background: rgba(0,122,255,0.1); color: #007aff;">
+                                        <i class="fab fa-${languageIcons[currentFile.language] || 'file-code'}"></i> ${currentFile.language.charAt(0).toUpperCase() + currentFile.language.slice(1)}
+                                    </div>
+                                </div>
+
+                                <!-- Tab Bar -->
+                                <div style="display: flex; align-items: center; background: ${state.codeTheme === 'dark' ? '#252525' : '#e8e8e8'}; border-bottom: 1px solid ${state.codeTheme === 'dark' ? '#333' : 'rgba(0,0,0,0.1)'}; padding: 4px 8px; gap: 4px; overflow-x: auto;">
+                                    ${state.codeFiles.map((file, index) => `
+                                        <div style="
+                                            padding: 6px 32px 6px 12px;
+                                            background: ${index === state.currentCodeFile ? (state.codeTheme === 'dark' ? '#1e1e1e' : 'white') : 'transparent'};
+                                            border-radius: 6px 6px 0 0;
+                                            cursor: pointer;
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 8px;
+                                            position: relative;
+                                            min-width: 120px;
+                                            transition: background 0.2s;
+                                        " onclick="openCodeFile(${index})" onmouseenter="if(${index} !== ${state.currentCodeFile}) this.style.background='${state.codeTheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}'" onmouseleave="if(${index} !== ${state.currentCodeFile}) this.style.background='transparent'">
+                                            <i class="fab fa-${languageIcons[file.language] || 'file-code'}" style="font-size: 12px; color: ${index === state.currentCodeFile ? '#007aff' : (state.codeTheme === 'dark' ? '#888' : '#666')};"></i>
+                                            <span style="font-size: 12px; color: ${state.codeTheme === 'dark' ? (index === state.currentCodeFile ? 'white' : '#aaa') : '#333'};">${file.name}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+
+                                <!-- Editor -->
+                                <div class="code-editor-content" style="background: ${state.codeTheme === 'dark' ? '#1e1e1e' : 'white'};">
+                                    <div class="code-line-numbers" id="codeLineNumbers" style="background: ${state.codeTheme === 'dark' ? '#1e1e1e' : '#f5f5f7'}; color: ${state.codeTheme === 'dark' ? '#858585' : '#999'};">${lineNumbers}</div>
+                                    <textarea class="code-textarea" id="codeTextarea" style="background: ${state.codeTheme === 'dark' ? '#1e1e1e' : 'white'}; color: ${state.codeTheme === 'dark' ? '#d4d4d4' : '#333'};">${currentFile.content}</textarea>
+                                </div>
+
+                                <!-- Status Bar -->
+                                <div style="padding: 6px 16px; background: ${state.codeTheme === 'dark' ? '#007acc' : '#007aff'}; color: white; font-size: 12px; display: flex; align-items: center; gap: 20px;">
+                                    <div><i class="fas fa-file-code"></i> ${currentFile.name}</div>
+                                    <div><i class="fas fa-code"></i> ${currentFile.language}</div>
+                                    <div><i class="fas fa-list-ol"></i> ${lines} lines</div>
+                                    <div style="flex: 1;"></div>
+                                    <div><i class="fas fa-check-circle"></i> Ready</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    const textarea = container.querySelector('#codeTextarea');
+                    const lineNumbersDiv = container.querySelector('#codeLineNumbers');
+
+                    textarea.addEventListener('input', () => {
+                        state.codeFiles[state.currentCodeFile].content = textarea.value;
+                        const lines = textarea.value.split('\n').length;
+                        lineNumbersDiv.textContent = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+                    });
+
+                    textarea.addEventListener('scroll', () => {
+                        lineNumbersDiv.scrollTop = textarea.scrollTop;
+                    });
+                }
+            },
+            music: {
+                name: 'Music',
+                icon: '<i class="fas fa-music"></i>',
+                defaultSize: { width: 800, height: 650 },
+                render: (container) => {
+                    const currentSong = state.playlist[state.currentSong];
+                    container.innerHTML = `
+                        <div class="music-player">
+                            <div class="music-header">
+                                <div class="album-art"><i class="fas fa-music"></i></div>
+                                <div class="song-info">
+                                    <div class="song-title">${currentSong.title}</div>
+                                    <div class="song-artist">${currentSong.artist}</div>
+                                </div>
+                            </div>
+                            <div class="music-controls">
+                                <div class="progress-bar" id="progressBar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <div class="progress-times">
+                                    <span>1:23</span>
+                                    <span>${currentSong.duration}</span>
+                                </div>
+                                <div class="playback-controls" style="margin-bottom: 20px;">
+                                    <button class="control-btn ${state.isShuffle ? 'active-btn' : ''}" onclick="toggleShuffle()" title="Shuffle">
+                                        <i class="fas fa-random"></i>
+                                    </button>
+                                    <button class="control-btn" onclick="previousSong()"><i class="fas fa-step-backward"></i></button>
+                                    <button class="control-btn play" id="playBtn" onclick="togglePlay()">
+                                        <i class="fas fa-${state.isPlaying ? 'pause' : 'play'}"></i>
+                                    </button>
+                                    <button class="control-btn" onclick="nextSong()"><i class="fas fa-step-forward"></i></button>
+                                    <button class="control-btn ${state.isRepeat ? 'active-btn' : ''}" onclick="toggleRepeat()" title="Repeat">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px; color: white;">
+                                    <i class="fas fa-volume-${state.volume === 0 ? 'mute' : state.volume < 50 ? 'down' : 'up'}" style="font-size: 18px;"></i>
+                                    <input type="range" min="0" max="100" value="${state.volume}"
+                                           onchange="setVolume(this.value)"
+                                           style="flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.3); outline: none; -webkit-appearance: none;">
+                                    <span style="font-size: 14px; opacity: 0.8; min-width: 40px; text-align: right;">${state.volume}%</span>
+                                </div>
+                            </div>
+                            <div class="playlist">
+                                ${state.playlist.map((song, index) => `
+                                    <div class="playlist-item ${index === state.currentSong ? 'playing' : ''}" onclick="playSong(${index})">
+                                        <div style="font-size: 24px;"><i class="fas fa-${index === state.currentSong && state.isPlaying ? 'volume-up' : 'music'}"></i></div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600;">${song.title}</div>
+                                            <div style="font-size: 12px; color: #666;">${song.artist}</div>
+                                        </div>
+                                        <div style="color: #666;">${song.duration}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            photos: {
+                name: 'Photos',
+                icon: '<i class="fas fa-images"></i>',
+                defaultSize: { width: 1000, height: 650 },
+                render: (container) => {
+                    const photosByAlbum = {
+                        'All Photos': ['camera', 'image', 'mountain', 'tree', 'sun', 'star', 'heart', 'leaf', 'umbrella', 'fire', 'snowflake', 'bolt', 'cloud', 'moon', 'car', 'plane', 'rocket', 'gift'],
+                        'Favorites': ['heart', 'star', 'sun', 'fire', 'rocket', 'gift'],
+                        'Nature': ['mountain', 'tree', 'leaf', 'sun', 'snowflake', 'cloud'],
+                        'City': ['car', 'plane', 'camera'],
+                        'People': ['heart', 'gift', 'umbrella'],
+                        'Screenshots': ['image', 'camera', 'bolt']
+                    };
+
+                    const currentPhotos = photosByAlbum[state.currentAlbum] || photosByAlbum['All Photos'];
+                    const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff'];
+
+                    container.innerHTML = `
+                        <div style="display: flex; height: 100%;">
+                            <!-- Sidebar -->
+                            <div style="width: 200px; background: #f5f5f7; border-right: 1px solid rgba(0,0,0,0.1); padding: 16px;">
+                                <div style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 12px; text-transform: uppercase;">Albums</div>
+                                ${state.photoAlbums.map(album => {
+                                    const count = photosByAlbum[album]?.length || 0;
+                                    return `
+                                        <div onclick="changePhotoAlbum('${album}')" style="
+                                            padding: 10px 12px;
+                                            cursor: pointer;
+                                            background: ${state.currentAlbum === album ? 'white' : 'transparent'};
+                                            border-radius: 8px;
+                                            margin-bottom: 4px;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: space-between;
+                                        " onmouseenter="if('${state.currentAlbum}' !== '${album}') this.style.background='rgba(255,255,255,0.5)'" onmouseleave="if('${state.currentAlbum}' !== '${album}') this.style.background='transparent'">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <i class="fas fa-${album === 'Favorites' ? 'heart' : album === 'Screenshots' ? 'camera' : 'folder'}" style="color: ${album === 'Favorites' ? '#ff6b6b' : '#007aff'}; font-size: 14px;"></i>
+                                                <span style="font-size: 14px;">${album}</span>
+                                            </div>
+                                            <span style="font-size: 12px; color: #999;">${count}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+
+                            <!-- Main Content -->
+                            <div style="flex: 1; display: flex; flex-direction: column;">
+                                <!-- Toolbar -->
+                                <div style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between;">
+                                    <div>
+                                        <h2 style="margin: 0; font-size: 24px;">${state.currentAlbum}</h2>
+                                        <div style="font-size: 13px; color: #666; margin-top: 4px;">${currentPhotos.length} photos</div>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button onclick="togglePhotoView('grid')" class="code-editor-btn" style="background: ${state.photoViewMode === 'grid' ? '#007aff' : 'transparent'}; color: ${state.photoViewMode === 'grid' ? 'white' : 'inherit'};" title="Grid View">
+                                            <i class="fas fa-th"></i>
+                                        </button>
+                                        <button onclick="togglePhotoView('list')" class="code-editor-btn" style="background: ${state.photoViewMode === 'list' ? '#007aff' : 'transparent'}; color: ${state.photoViewMode === 'list' ? 'white' : 'inherit'};" title="List View">
+                                            <i class="fas fa-list"></i>
+                                        </button>
+                                        <button onclick="startSlideshow()" class="code-editor-btn" title="Slideshow">
+                                            <i class="fas fa-play"></i> Slideshow
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Photo Grid/List -->
+                                <div style="flex: 1; overflow-y: auto; padding: 20px;">
+                                    ${state.photoViewMode === 'grid' ? `
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;">
+                                            ${currentPhotos.map((photo, index) => `
+                                                <div onclick="viewPhoto('${photo}', ${index})" style="
+                                                    aspect-ratio: 1;
+                                                    background: linear-gradient(135deg, ${colors[index % colors.length]}, ${colors[(index + 1) % colors.length]});
+                                                    border-radius: 12px;
+                                                    display: flex;
+                                                    align-items: center;
+                                                    justify-content: center;
+                                                    cursor: pointer;
+                                                    transition: transform 0.2s, box-shadow 0.2s;
+                                                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                                                " onmouseenter="this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.2)'" onmouseleave="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'">
+                                                    <i class="fas fa-${photo}" style="font-size: 48px; color: white; opacity: 0.9;"></i>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : `
+                                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                                            ${currentPhotos.map((photo, index) => `
+                                                <div onclick="viewPhoto('${photo}', ${index})" style="
+                                                    padding: 16px;
+                                                    background: white;
+                                                    border: 1px solid rgba(0,0,0,0.1);
+                                                    border-radius: 12px;
+                                                    display: flex;
+                                                    align-items: center;
+                                                    gap: 16px;
+                                                    cursor: pointer;
+                                                    transition: background 0.2s;
+                                                " onmouseenter="this.style.background='#f5f5f7'" onmouseleave="this.style.background='white'">
+                                                    <div style="
+                                                        width: 80px;
+                                                        height: 80px;
+                                                        background: linear-gradient(135deg, ${colors[index % colors.length]}, ${colors[(index + 1) % colors.length]});
+                                                        border-radius: 8px;
+                                                        display: flex;
+                                                        align-items: center;
+                                                        justify-content: center;
+                                                    ">
+                                                        <i class="fas fa-${photo}" style="font-size: 32px; color: white; opacity: 0.9;"></i>
+                                                    </div>
+                                                    <div style="flex: 1;">
+                                                        <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">${photo.charAt(0).toUpperCase() + photo.slice(1)}</div>
+                                                        <div style="font-size: 13px; color: #666;">Photo ${index + 1} • Oct ${17 - Math.floor(index / 3)}, 2025</div>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right" style="color: #ccc;"></i>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            calculator: {
+                name: 'Calculator',
+                icon: '<i class="fas fa-calculator"></i>',
+                defaultSize: { width: 350, height: 550 },
+                render: (container) => {
+                    container.innerHTML = `
+                        <div class="calculator">
+                            <div class="calc-display" id="calcDisplay">${state.calcDisplay}</div>
+                            <div class="calc-buttons">
+                                <button class="calc-btn function" onclick="calcClear()">C</button>
+                                <button class="calc-btn function" onclick="calcToggleSign()">±</button>
+                                <button class="calc-btn function" onclick="calcPercent()">%</button>
+                                <button class="calc-btn operator" onclick="calcOperation('÷')">÷</button>
+                                
+                                <button class="calc-btn number" onclick="calcNumber('7')">7</button>
+                                <button class="calc-btn number" onclick="calcNumber('8')">8</button>
+                                <button class="calc-btn number" onclick="calcNumber('9')">9</button>
+                                <button class="calc-btn operator" onclick="calcOperation('×')">×</button>
+                                
+                                <button class="calc-btn number" onclick="calcNumber('4')">4</button>
+                                <button class="calc-btn number" onclick="calcNumber('5')">5</button>
+                                <button class="calc-btn number" onclick="calcNumber('6')">6</button>
+                                <button class="calc-btn operator" onclick="calcOperation('-')">−</button>
+                                
+                                <button class="calc-btn number" onclick="calcNumber('1')">1</button>
+                                <button class="calc-btn number" onclick="calcNumber('2')">2</button>
+                                <button class="calc-btn number" onclick="calcNumber('3')">3</button>
+                                <button class="calc-btn operator" onclick="calcOperation('+')">+</button>
+
+                                <button class="calc-btn number zero" onclick="calcNumber('0')">0</button>
+                                <button class="calc-btn number" onclick="calcNumber('.')">.</button>
+                                <button class="calc-btn operator" onclick="calcEquals()">=</button>
+                            </div>
+                            <div style="padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                                <button class="calc-btn function" style="font-size: 14px;" onclick="calcMemory('MC')">MC</button>
+                                <button class="calc-btn function" style="font-size: 14px;" onclick="calcMemory('MR')">MR</button>
+                                <button class="calc-btn function" style="font-size: 14px;" onclick="calcMemory('M+')">M+</button>
+                                <button class="calc-btn function" style="font-size: 14px;" onclick="calcMemory('M-')">M-</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            notes: {
+                name: 'Notes',
+                icon: '<i class="fas fa-sticky-note"></i>',
+                defaultSize: { width: 900, height: 600 },
+                render: (container) => {
+                    const currentNote = state.notes.find(n => n.id === state.currentNote);
+                    container.innerHTML = `
+                        <div class="notes-container">
+                            <div class="notes-sidebar">
+                                <div style="padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                    <button class="code-editor-btn" onclick="createNewNote()" style="width: 100%;">
+                                        <i class="fas fa-plus"></i> New Note
+                                    </button>
+                                </div>
+                                <div class="notes-list">
+                                    ${state.notes.map(note => `
+                                        <div class="note-item ${note.id === state.currentNote ? 'active' : ''}" onclick="selectNote(${note.id})">
+                                            <div class="note-title">${note.title}</div>
+                                            <div class="note-preview">${note.content.substring(0, 50)}${note.content.length > 50 ? '...' : ''}</div>
+                                            <div class="note-date">${note.date}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="notes-editor">
+                                <div style="padding: 12px; background: #f5f5f7; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; gap: 8px;">
+                                    <button class="code-editor-btn" onclick="formatNote('bold')" title="Bold">
+                                        <i class="fas fa-bold"></i>
+                                    </button>
+                                    <button class="code-editor-btn" onclick="formatNote('italic')" title="Italic">
+                                        <i class="fas fa-italic"></i>
+                                    </button>
+                                    <button class="code-editor-btn" onclick="formatNote('list')" title="Bullet List">
+                                        <i class="fas fa-list-ul"></i>
+                                    </button>
+                                    <div style="flex: 1;"></div>
+                                    <button class="code-editor-btn" onclick="deleteCurrentNote()" title="Delete Note">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                    <span style="font-size: 12px; color: #666; display: flex; align-items: center;">
+                                        ${state.notes.length} notes
+                                    </span>
+                                </div>
+                                <input type="text" class="notes-editor-title" id="noteTitle" value="${currentNote.title}" placeholder="Note Title">
+                                <textarea class="notes-editor-content" id="noteContent" placeholder="Start typing your note...">${currentNote.content}</textarea>
+                            </div>
+                        </div>
+                    `;
+
+                    const titleInput = container.querySelector('#noteTitle');
+                    const contentInput = container.querySelector('#noteContent');
+
+                    titleInput.addEventListener('input', () => {
+                        const note = state.notes.find(n => n.id === state.currentNote);
+                        if (note) {
+                            note.title = titleInput.value;
+                            if (state.windows['notes']) {
+                                const items = container.querySelectorAll('.note-item');
+                                items.forEach(item => {
+                                    if (item.classList.contains('active')) {
+                                        item.querySelector('.note-title').textContent = titleInput.value;
+                                    }
+                                });
+                            }
+                        }
+                    });
+
+                    contentInput.addEventListener('input', () => {
+                        const note = state.notes.find(n => n.id === state.currentNote);
+                        if (note) {
+                            note.content = contentInput.value;
+                            if (state.windows['notes']) {
+                                const items = container.querySelectorAll('.note-item');
+                                items.forEach(item => {
+                                    if (item.classList.contains('active')) {
+                                        const preview = contentInput.value.substring(0, 50);
+                                        item.querySelector('.note-preview').textContent = preview + (contentInput.value.length > 50 ? '...' : '');
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            },
+            calendar: {
+                name: 'Calendar',
+                icon: '<i class="fas fa-calendar-alt"></i>',
+                defaultSize: { width: 800, height: 600 },
+                render: (container) => {
+                    const date = new Date();
+                    const monthName = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                    const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+                    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+
+                    container.innerHTML = `
+                        <div class="calendar-container">
+                            <div class="calendar-header">
+                                <div class="calendar-title">${monthName}</div>
+                                <div class="calendar-nav">
+                                    <button class="calendar-nav-btn"><i class="fas fa-chevron-left"></i> Previous</button>
+                                    <button class="calendar-nav-btn">Today</button>
+                                    <button class="calendar-nav-btn">Next <i class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="calendar-grid">
+                                <div class="calendar-weekdays">
+                                    <div class="calendar-weekday">Sun</div>
+                                    <div class="calendar-weekday">Mon</div>
+                                    <div class="calendar-weekday">Tue</div>
+                                    <div class="calendar-weekday">Wed</div>
+                                    <div class="calendar-weekday">Thu</div>
+                                    <div class="calendar-weekday">Fri</div>
+                                    <div class="calendar-weekday">Sat</div>
+                                </div>
+                                <div class="calendar-days">
+                                    ${Array(firstDay).fill('<div class="calendar-day other-month"></div>').join('')}
+                                    ${Array(daysInMonth).fill(0).map((_, i) => {
+                                        const day = i + 1;
+                                        const isToday = day === date.getDate();
+                                        return `<div class="calendar-day ${isToday ? 'today' : ''}">${day}</div>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            weather: {
+                name: 'Weather',
+                icon: '<i class="fas fa-cloud-sun"></i>',
+                defaultSize: { width: 700, height: 650 },
+                render: (container) => {
+                    const forecast = [
+                        { day: 'Mon', icon: 'sun', high: 78, low: 65 },
+                        { day: 'Tue', icon: 'cloud-sun', high: 75, low: 63 },
+                        { day: 'Wed', icon: 'cloud-rain', high: 68, low: 58 },
+                        { day: 'Thu', icon: 'cloud', high: 70, low: 60 },
+                        { day: 'Fri', icon: 'sun', high: 80, low: 67 },
+                        { day: 'Sat', icon: 'cloud-sun', high: 77, low: 65 },
+                        { day: 'Sun', icon: 'sun', high: 82, low: 68 }
+                    ];
+
+                    container.innerHTML = `
+                        <div class="weather-app" style="padding: 30px;">
+                            <div style="text-align: left; margin-bottom: 30px;">
+                                <div class="weather-location" style="font-size: 24px; margin-bottom: 8px;">San Francisco, CA</div>
+                                <div style="font-size: 14px; opacity: 0.7;">Tuesday, October 17, 2025</div>
+                            </div>
+                            <div style="display: flex; align-items: center; margin-bottom: 40px;">
+                                <div class="weather-icon" style="font-size: 100px; margin: 0 30px 0 0;"><i class="fas fa-sun"></i></div>
+                                <div>
+                                    <div class="weather-temp" style="font-size: 64px; margin: 0;">72°</div>
+                                    <div class="weather-condition" style="font-size: 20px; margin: 0;">Mostly Sunny</div>
+                                    <div style="font-size: 14px; opacity: 0.8; margin-top: 4px;">Feels like 74°</div>
+                                </div>
+                            </div>
+                            <div class="weather-details" style="gap: 24px; margin-bottom: 32px;">
+                                <div class="weather-detail-item">
+                                    <div class="weather-detail-label"><i class="fas fa-temperature-high"></i> High</div>
+                                    <div class="weather-detail-value">78°</div>
+                                </div>
+                                <div class="weather-detail-item">
+                                    <div class="weather-detail-label"><i class="fas fa-temperature-low"></i> Low</div>
+                                    <div class="weather-detail-value">65°</div>
+                                </div>
+                                <div class="weather-detail-item">
+                                    <div class="weather-detail-label"><i class="fas fa-tint"></i> Humidity</div>
+                                    <div class="weather-detail-value">45%</div>
+                                </div>
+                                <div class="weather-detail-item">
+                                    <div class="weather-detail-label"><i class="fas fa-wind"></i> Wind</div>
+                                    <div class="weather-detail-value">8 mph</div>
+                                </div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 20px;">
+                                <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">7-Day Forecast</div>
+                                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px;">
+                                    ${forecast.map(day => `
+                                        <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                                            <div style="font-weight: 600; margin-bottom: 8px;">${day.day}</div>
+                                            <div style="font-size: 32px; margin-bottom: 8px;"><i class="fas fa-${day.icon}"></i></div>
+                                            <div style="font-size: 14px;">
+                                                <span style="font-weight: 600;">${day.high}°</span>
+                                                <span style="opacity: 0.7;"> / ${day.low}°</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            clock: {
+                name: 'Clock',
+                icon: '<i class="fas fa-clock"></i>',
+                defaultSize: { width: 600, height: 500 },
+                render: (container) => {
+                    updateClock();
+                    setInterval(updateClock, 1000);
+
+                    function updateClock() {
+                        const now = new Date();
+                        const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        const date = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+                        container.innerHTML = `
+                            <div class="clock-container">
+                                <div class="clock-display">${time}</div>
+                                <div class="clock-date">${date}</div>
+                                <div class="clock-tabs">
+                                    <div class="clock-tab active"><i class="fas fa-bell"></i> Alarm</div>
+                                    <div class="clock-tab"><i class="fas fa-stopwatch"></i> Stopwatch</div>
+                                    <div class="clock-tab"><i class="fas fa-hourglass-half"></i> Timer</div>
+                                    <div class="clock-tab"><i class="fas fa-globe"></i> World Clock</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            },
+            textedit: {
+                name: 'TextEdit',
+                icon: '<i class="fas fa-file-alt"></i>',
+                defaultSize: { width: 700, height: 500 },
+                render: (container) => {
+                    container.innerHTML = `
+                        <div class="text-editor">
+                            <div class="text-editor-toolbar">
+                                <button class="code-editor-btn"><i class="fas fa-folder-open"></i> Open</button>
+                                <button class="code-editor-btn"><i class="fas fa-save"></i> Save</button>
+                                <button class="code-editor-btn"><i class="fas fa-print"></i> Print</button>
+                            </div>
+                            <textarea class="text-editor-textarea" placeholder="Start typing..."></textarea>
+                        </div>
+                    `;
+                }
+            },
+            settings: {
+                name: 'Settings',
+                icon: '<i class="fas fa-cog"></i>',
+                defaultSize: { width: 800, height: 600 },
+                render: (container) => {
+                    container.innerHTML = `
+                        <div class="settings-container">
+                            <div class="settings-sidebar">
+                                <div class="sidebar-section">
+                                    <div class="sidebar-item active"><i class="fas fa-palette"></i> Appearance</div>
+                                    <div class="sidebar-item"><i class="fas fa-lock"></i> Security</div>
+                                    <div class="sidebar-item"><i class="fas fa-wifi"></i> Network</div>
+                                    <div class="sidebar-item"><i class="fas fa-volume-up"></i> Sound</div>
+                                    <div class="sidebar-item"><i class="fas fa-desktop"></i> Display</div>
+                                    <div class="sidebar-item"><i class="fas fa-battery-full"></i> Battery</div>
+                                </div>
+                            </div>
+                            <div class="settings-content">
+                                <div class="settings-section">
+                                    <div class="settings-section-title">Appearance</div>
+                                    <div class="settings-item">
+                                        <div class="settings-item-label">Dark Mode</div>
+                                        <div class="settings-toggle" onclick="this.classList.toggle('active')"></div>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-item-label">Auto-hide Dock</div>
+                                        <div class="settings-toggle" onclick="this.classList.toggle('active')"></div>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-item-label">Show battery percentage</div>
+                                        <div class="settings-toggle active" onclick="this.classList.toggle('active')"></div>
+                                    </div>
+                                </div>
+                                <div class="settings-section">
+                                    <div class="settings-section-title">Desktop</div>
+                                    <div class="settings-item">
+                                        <div class="settings-item-label">Dynamic Wallpaper</div>
+                                        <div class="settings-toggle active" onclick="this.classList.toggle('active')"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            messages: {
+                name: 'Messages',
+                icon: '<i class="fas fa-comments"></i>',
+                defaultSize: { width: 900, height: 600 },
+                render: (container) => {
+                    container.innerHTML = `
+                        <div class="messages-container">
+                            <div class="messages-list">
+                                <div class="messages-search">
+                                    <input type="text" placeholder="🔍 Search messages..." id="messageSearchInput">
+                                </div>
+                                <div style="flex: 1; overflow-y: auto;">
+                                    ${state.messages.map(msg => `
+                                        <div class="message-preview ${msg.active ? 'active' : ''}" onclick="selectMessage(${msg.id})">
+                                            <div class="message-avatar" style="background: linear-gradient(135deg, ${getAvatarColor(msg.id)});">
+                                                ${msg.avatar}
+                                            </div>
+                                            <div style="flex: 1; min-width: 0;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                                    <div style="font-weight: 600; font-size: 14px;">${msg.name}</div>
+                                                    <div style="font-size: 11px; color: #999;">${msg.time}</div>
+                                                </div>
+                                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                    <div style="font-size: 13px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                                                        ${msg.preview}
+                                                    </div>
+                                                    ${msg.unread > 0 ? `
+                                                        <div style="background: #007aff; color: white; border-radius: 10px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-left: 8px;">
+                                                            ${msg.unread}
+                                                        </div>
+                                                    ` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="messages-chat">
+                                <div class="messages-header" style="display: flex; align-items: center; gap: 12px;">
+                                    <div class="message-avatar" style="width: 36px; height: 36px; font-size: 14px; background: linear-gradient(135deg, #667eea, #764ba2);">
+                                        JD
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600;">John Doe</div>
+                                        <div style="font-size: 11px; color: #666;">Active now</div>
+                                    </div>
+                                    <div style="flex: 1;"></div>
+                                    <button class="code-editor-btn" title="Video Call">
+                                        <i class="fas fa-video"></i>
+                                    </button>
+                                    <button class="code-editor-btn" title="Audio Call">
+                                        <i class="fas fa-phone"></i>
+                                    </button>
+                                    <button class="code-editor-btn" title="Info">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </div>
+                                <div class="messages-content" id="messagesContent">
+                                    ${state.currentChat.map((msg, index) => `
+                                        <div style="display: flex; flex-direction: column; align-items: ${msg.sent ? 'flex-end' : 'flex-start'}; margin-bottom: 16px;">
+                                            ${index === 0 || state.currentChat[index-1].sent !== msg.sent ? `
+                                                <div style="font-size: 11px; color: #999; margin-bottom: 4px; ${msg.sent ? 'margin-right: 12px;' : 'margin-left: 12px;'}">
+                                                    ${msg.sent ? 'You' : 'John Doe'}
+                                                </div>
+                                            ` : ''}
+                                            <div class="message-bubble ${msg.sent ? 'sent' : 'received'}">${msg.text}</div>
+                                            ${index === state.currentChat.length - 1 ? `
+                                                <div style="font-size: 10px; color: #999; margin-top: 4px; ${msg.sent ? 'margin-right: 12px;' : 'margin-left: 12px;'}">
+                                                    ${new Date().toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'})}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="messages-input" style="gap: 8px;">
+                                    <button class="code-editor-btn" title="Attach"><i class="fas fa-paperclip"></i></button>
+                                    <button class="code-editor-btn" title="Photo"><i class="fas fa-image"></i></button>
+                                    <input type="text" placeholder="iMessage" id="messageInput" onkeypress="if(event.key==='Enter') sendMessage()">
+                                    <button class="code-editor-btn" title="Emoji"><i class="fas fa-smile"></i></button>
+                                    <button class="messages-send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Scroll to bottom of messages
+                    setTimeout(() => {
+                        const messagesContent = document.getElementById('messagesContent');
+                        if (messagesContent) {
+                            messagesContent.scrollTop = messagesContent.scrollHeight;
+                        }
+                    }, 100);
+                }
+            },
+            mail: {
+                name: 'Mail',
+                icon: '<i class="fas fa-envelope"></i>',
+                defaultSize: { width: 1100, height: 650 },
+                render: (container) => {
+                    const inboxEmails = state.emails.filter(e => e.folder === 'inbox');
+                    const starredEmails = state.emails.filter(e => e.starred);
+                    const unreadCount = inboxEmails.filter(e => !e.read).length;
+                    const currentEmail = state.emails.find(e => e.id === state.currentEmail);
+
+                    container.innerHTML = `
+                        <div style="display: flex; height: 100%;">
+                            <!-- Sidebar -->
+                            <div style="width: 200px; background: #f5f5f7; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column;">
+                                <div style="padding: 16px;">
+                                    <button onclick="composeEmail()" class="code-editor-btn" style="width: 100%; background: #007aff; color: white; padding: 10px;">
+                                        <i class="fas fa-pen"></i> Compose
+                                    </button>
+                                </div>
+                                <div style="flex: 1; overflow-y: auto;">
+                                    <div onclick="changeEmailFolder('inbox')" style="padding: 12px 20px; cursor: pointer; background: ${state.emailFolder === 'inbox' ? 'rgba(0,122,255,0.1)' : 'transparent'}; display: flex; align-items: center; justify-content: space-between;" onmouseenter="if('${state.emailFolder}' !== 'inbox') this.style.background='rgba(0,0,0,0.05)'" onmouseleave="if('${state.emailFolder}' !== 'inbox') this.style.background='transparent'">
+                                        <div><i class="fas fa-inbox" style="margin-right: 8px; color: #007aff;"></i> Inbox</div>
+                                        ${unreadCount > 0 ? `<div style="background: #007aff; color: white; border-radius: 10px; padding: 2px 8px; font-size: 11px;">${unreadCount}</div>` : ''}
+                                    </div>
+                                    <div onclick="changeEmailFolder('starred')" style="padding: 12px 20px; cursor: pointer; background: ${state.emailFolder === 'starred' ? 'rgba(0,122,255,0.1)' : 'transparent'}; display: flex; align-items: center;" onmouseenter="if('${state.emailFolder}' !== 'starred') this.style.background='rgba(0,0,0,0.05)'" onmouseleave="if('${state.emailFolder}' !== 'starred') this.style.background='transparent'">
+                                        <i class="fas fa-star" style="margin-right: 8px; color: #ffcc00;"></i> Starred
+                                    </div>
+                                    <div onclick="changeEmailFolder('sent')" style="padding: 12px 20px; cursor: pointer; background: ${state.emailFolder === 'sent' ? 'rgba(0,122,255,0.1)' : 'transparent'}; display: flex; align-items: center;" onmouseenter="if('${state.emailFolder}' !== 'sent') this.style.background='rgba(0,0,0,0.05)'" onmouseleave="if('${state.emailFolder}' !== 'sent') this.style.background='transparent'">
+                                        <i class="fas fa-paper-plane" style="margin-right: 8px; color: #34c759;"></i> Sent
+                                    </div>
+                                    <div onclick="changeEmailFolder('drafts')" style="padding: 12px 20px; cursor: pointer; background: ${state.emailFolder === 'drafts' ? 'rgba(0,122,255,0.1)' : 'transparent'}; display: flex; align-items: center;" onmouseenter="if('${state.emailFolder}' !== 'drafts') this.style.background='rgba(0,0,0,0.05)'" onmouseleave="if('${state.emailFolder}' !== 'drafts') this.style.background='transparent'">
+                                        <i class="fas fa-file-alt" style="margin-right: 8px; color: #ff9500;"></i> Drafts
+                                    </div>
+                                    <div onclick="changeEmailFolder('trash')" style="padding: 12px 20px; cursor: pointer; background: ${state.emailFolder === 'trash' ? 'rgba(0,122,255,0.1)' : 'transparent'}; display: flex; align-items: center;" onmouseenter="if('${state.emailFolder}' !== 'trash') this.style.background='rgba(0,0,0,0.05)'" onmouseleave="if('${state.emailFolder}' !== 'trash') this.style.background='transparent'">
+                                        <i class="fas fa-trash" style="margin-right: 8px; color: #ff3b30;"></i> Trash
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Email List -->
+                            <div style="width: 350px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column;">
+                                <div style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); font-weight: 600; font-size: 18px;">
+                                    ${state.emailFolder === 'inbox' ? 'Inbox' : state.emailFolder === 'starred' ? 'Starred' : state.emailFolder.charAt(0).toUpperCase() + state.emailFolder.slice(1)}
+                                </div>
+                                <div style="flex: 1; overflow-y: auto;">
+                                    ${(state.emailFolder === 'starred' ? starredEmails : inboxEmails).map(email => `
+                                        <div onclick="selectEmail(${email.id})" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; background: ${email.id === state.currentEmail ? 'rgba(0,122,255,0.1)' : 'white'}; ${!email.read ? 'font-weight: 600;' : ''}" onmouseenter="if(${email.id} !== ${state.currentEmail}) this.style.background='#f5f5f7'" onmouseleave="if(${email.id} !== ${state.currentEmail}) this.style.background='white'">
+                                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                                <div style="font-size: 14px; ${email.read ? 'font-weight: 500;' : 'font-weight: 700;'}">${email.from}</div>
+                                                <div style="display: flex; gap: 8px; align-items: center;">
+                                                    <i class="fas fa-star" onclick="event.stopPropagation(); toggleStar(${email.id})" style="font-size: 12px; cursor: pointer; color: ${email.starred ? '#ffcc00' : '#ccc'};"></i>
+                                                    <div style="font-size: 11px; color: #999;">${email.date.split(',')[0]}</div>
+                                                </div>
+                                            </div>
+                                            <div style="font-size: 13px; ${email.read ? 'font-weight: 400;' : 'font-weight: 600;'} margin-bottom: 4px;">${email.subject}</div>
+                                            <div style="font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email.preview}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Email Content -->
+                            <div style="flex: 1; display: flex; flex-direction: column; background: white;">
+                                ${currentEmail ? `
+                                    <div style="padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                            <button class="code-editor-btn" title="Reply"><i class="fas fa-reply"></i></button>
+                                            <button class="code-editor-btn" title="Forward"><i class="fas fa-share"></i></button>
+                                            <button class="code-editor-btn" title="Archive"><i class="fas fa-archive"></i></button>
+                                            <button onclick="deleteEmail(${currentEmail.id})" class="code-editor-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                                            <div style="flex: 1;"></div>
+                                            <i class="fas fa-star" onclick="toggleStar(${currentEmail.id})" style="font-size: 18px; cursor: pointer; color: ${currentEmail.starred ? '#ffcc00' : '#ccc'};"></i>
+                                        </div>
+                                        <h2 style="margin: 0 0 16px 0; font-size: 24px;">${currentEmail.subject}</h2>
+                                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                            <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 16px;">
+                                                ${currentEmail.from.split(' ').map(n => n[0]).join('')}
+                                            </div>
+                                            <div>
+                                                <div style="font-weight: 600;">${currentEmail.from}</div>
+                                                <div style="font-size: 13px; color: #666;">${currentEmail.fromEmail}</div>
+                                            </div>
+                                        </div>
+                                        <div style="font-size: 13px; color: #999;">${currentEmail.date}</div>
+                                    </div>
+                                    <div style="flex: 1; padding: 32px; overflow-y: auto; line-height: 1.8; white-space: pre-wrap;">
+                                        ${currentEmail.body}
+                                    </div>
+                                ` : `
+                                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
+                                        <div style="text-align: center;">
+                                            <i class="fas fa-envelope-open" style="font-size: 64px; margin-bottom: 16px;"></i>
+                                            <div style="font-size: 18px;">Select an email to read</div>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            safari: {
+                name: 'Safari',
+                icon: '<i class="fas fa-compass"></i>',
+                defaultSize: { width: 1000, height: 700 },
+                render: (container) => {
+                    const activeTab = state.safariTabs.find(t => t.id === state.activeTab) || state.safariTabs[0];
+
+                    // Render the tab bar and content
+                    container.innerHTML = `
+                        <div style="display: flex; flex-direction: column; height: 100%;">
+                            <div style="display: flex; align-items: center; background: #f5f5f7; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 8px 8px 0 8px; gap: 4px;">
+                                ${state.safariTabs.map(tab => `
+                                    <div onclick="switchTab(${tab.id})" style="
+                                        position: relative;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                        padding: 8px 32px 8px 12px;
+                                        background: ${tab.id === state.activeTab ? 'white' : 'rgba(255,255,255,0.5)'};
+                                        border: 1px solid ${tab.id === state.activeTab ? 'rgba(0,0,0,0.1)' : 'transparent'};
+                                        border-bottom: none;
+                                        border-radius: 8px 8px 0 0;
+                                        cursor: pointer;
+                                        min-width: 150px;
+                                        max-width: 200px;
+                                        transition: background 0.2s;
+                                    " onmouseenter="if(${tab.id !== state.activeTab}) this.style.background='rgba(255,255,255,0.8)'" onmouseleave="if(${tab.id !== state.activeTab}) this.style.background='rgba(255,255,255,0.5)'">
+                                        <i class="fas fa-${tab.isHome ? 'home' : 'globe'}" style="font-size: 12px; color: #666;"></i>
+                                        <span style="flex: 1; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tab.title}</span>
+                                        ${state.safariTabs.length > 1 ? `
+                                            <button onclick="event.stopPropagation(); closeTab(${tab.id})" style="
+                                                position: absolute;
+                                                right: 8px;
+                                                background: transparent;
+                                                border: none;
+                                                cursor: pointer;
+                                                padding: 4px;
+                                                color: #666;
+                                                font-size: 12px;
+                                                border-radius: 4px;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                            " onmouseenter="this.style.background='rgba(0,0,0,0.1)'" onmouseleave="this.style.background='transparent'">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                                <button onclick="addNewTab()" style="
+                                    background: transparent;
+                                    border: none;
+                                    cursor: pointer;
+                                    padding: 8px 12px;
+                                    color: #666;
+                                    font-size: 14px;
+                                    border-radius: 6px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                " onmouseenter="this.style.background='rgba(0,0,0,0.05)'" onmouseleave="this.style.background='transparent'">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="safari-toolbar">
+                                <div class="safari-nav-btns">
+                                    <div class="safari-nav-btn" onclick="safariGoBack()"><i class="fas fa-arrow-left"></i></div>
+                                    <div class="safari-nav-btn" onclick="safariGoForward()"><i class="fas fa-arrow-right"></i></div>
+                                    <div class="safari-nav-btn" onclick="safariReload()"><i class="fas fa-redo"></i></div>
+                                </div>
+                                <input type="text" class="safari-url-bar" id="safariUrlBar" value="${activeTab.url || 'https://cloudos.io'}"
+                                       onkeypress="if(event.key==='Enter') safariNavigate(this.value)"
+                                       onfocus="this.select()">
+                                <button class="code-editor-btn" onclick="safariNavigate(document.getElementById('safariUrlBar').value)">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div class="safari-content" id="safariContent">
+                                ${activeTab.content || `
+                                    <div style="text-align: center; padding: 60px 40px;">
+                                        <div style="max-width: 600px; margin: 0 auto;">
+                                            <h1 style="font-size: 48px; margin-bottom: 24px;"><i class="fas fa-globe"></i> CloudOS Browser</h1>
+                                            <p style="font-size: 18px; color: #666; margin-bottom: 48px;">Fast, secure, and private web browsing</p>
+
+                                            <div style="position: relative; margin-bottom: 32px;">
+                                                <input type="text"
+                                                       id="safariSearchBox"
+                                                       placeholder="Search Google or enter a URL"
+                                                       onkeypress="if(event.key==='Enter') safariNavigate(this.value)"
+                                                       style="width: 100%; padding: 16px 20px; font-size: 16px; border: 2px solid #e0e0e0; border-radius: 24px; outline: none; transition: all 0.3s;"
+                                                       onfocus="this.style.borderColor='#007aff'; this.style.boxShadow='0 0 0 4px rgba(0,122,255,0.1)'"
+                                                       onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none'">
+                                                <i class="fas fa-search" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #999; font-size: 18px;"></i>
+                                            </div>
+
+                                            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 60px;">
+                                                <div style="padding: 24px; background: #f5f5f7; border-radius: 12px; width: 160px; cursor: pointer; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform='translateY(0)'">
+                                                    <div style="font-size: 32px; margin-bottom: 12px;"><i class="fas fa-bolt"></i></div>
+                                                    <div style="font-weight: 600; margin-bottom: 8px;">Lightning Fast</div>
+                                                    <div style="font-size: 14px; color: #666;">Optimized performance</div>
+                                                </div>
+                                                <div style="padding: 24px; background: #f5f5f7; border-radius: 12px; width: 160px; cursor: pointer; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform='translateY(0)'">
+                                                    <div style="font-size: 32px; margin-bottom: 12px;"><i class="fas fa-lock"></i></div>
+                                                    <div style="font-weight: 600; margin-bottom: 8px;">Secure</div>
+                                                    <div style="font-size: 14px; color: #666;">Privacy protected</div>
+                                                </div>
+                                                <div style="padding: 24px; background: #f5f5f7; border-radius: 12px; width: 160px; cursor: pointer; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform='translateY(0)'">
+                                                    <div style="font-size: 32px; margin-bottom: 12px;"><i class="fas fa-palette"></i></div>
+                                                    <div style="font-weight: 600; margin-bottom: 8px;">Beautiful</div>
+                                                    <div style="font-size: 14px; color: #666;">Modern design</div>
+                                                </div>
+                                            </div>
+
+                                            <div style="margin-top: 48px;">
+                                                <div style="font-size: 14px; color: #999; margin-bottom: 16px;">Quick Links</div>
+                                                <div style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;">
+                                                    <div onclick="safariNavigate('github.com')" style="cursor: pointer; padding: 12px 20px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; transition: all 0.2s;" onmouseenter="this.style.background='#f5f5f7'" onmouseleave="this.style.background='white'">
+                                                        <i class="fab fa-github" style="margin-right: 8px;"></i> GitHub
+                                                    </div>
+                                                    <div onclick="safariNavigate('stackoverflow.com')" style="cursor: pointer; padding: 12px 20px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; transition: all 0.2s;" onmouseenter="this.style.background='#f5f5f7'" onmouseleave="this.style.background='white'">
+                                                        <i class="fab fa-stack-overflow" style="margin-right: 8px;"></i> Stack Overflow
+                                                    </div>
+                                                    <div onclick="safariNavigate('youtube.com')" style="cursor: pointer; padding: 12px 20px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; transition: all 0.2s;" onmouseenter="this.style.background='#f5f5f7'" onmouseleave="this.style.background='white'">
+                                                        <i class="fab fa-youtube" style="margin-right: 8px;"></i> YouTube
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        };
+
+        // Window Management
+        function createWindow(appId) {
+            if (state.windows[appId]) {
+                focusWindow(appId);
+                return;
+            }
+
+            const app = apps[appId];
+            const windowEl = document.createElement('div');
+            windowEl.className = 'window active';
+            windowEl.id = `window-${appId}`;
+            
+            const { width, height } = app.defaultSize;
+            const left = (window.innerWidth - width) / 2;
+            const top = (window.innerHeight - height) / 2;
+            
+            windowEl.style.width = width + 'px';
+            windowEl.style.height = height + 'px';
+            windowEl.style.left = left + 'px';
+            windowEl.style.top = top + 'px';
+            windowEl.style.zIndex = ++state.windowZIndex;
+
+            windowEl.innerHTML = `
+                <div class="window-header">
+                    <div class="window-controls">
+                        <div class="window-control control-close" onclick="closeWindow('${appId}')"></div>
+                        <div class="window-control control-minimize" onclick="minimizeWindow('${appId}')"></div>
+                        <div class="window-control control-maximize" onclick="maximizeWindow('${appId}')"></div>
+                    </div>
+                    <div class="window-title">${app.name}</div>
+                    <div style="width: 52px;"></div>
+                </div>
+                <div class="window-content" id="content-${appId}"></div>
+            `;
+
+            document.getElementById('windowsContainer').appendChild(windowEl);
+            
+            const contentDiv = windowEl.querySelector(`#content-${appId}`);
+            app.render(contentDiv);
+
+            state.windows[appId] = { element: windowEl, app };
+            state.activeWindow = appId;
+
+            makeDraggable(windowEl, appId);
+            makeResizable(windowEl);
+
+            windowEl.addEventListener('mousedown', () => focusWindow(appId));
+
+            // Update menu bar
+            document.getElementById('appName').textContent = app.name;
+
+            // Update dock icons
+            updateDockIcons();
+        }
+
+        function closeWindow(appId) {
+            if (state.windows[appId]) {
+                state.windows[appId].element.remove();
+                delete state.windows[appId];
+                
+                if (state.activeWindow === appId) {
+                    const windowIds = Object.keys(state.windows);
+                    state.activeWindow = windowIds.length > 0 ? windowIds[windowIds.length - 1] : null;
+                }
+                
+                updateDockIcons();
+            }
+        }
+
+        function minimizeWindow(appId) {
+            if (state.windows[appId]) {
+                state.windows[appId].element.style.display = 'none';
+                updateDockIcons();
+            }
+        }
+
+        function maximizeWindow(appId) {
+            if (state.windows[appId]) {
+                state.windows[appId].element.classList.toggle('maximized');
+            }
+        }
+
+        function focusWindow(appId) {
+            Object.values(state.windows).forEach(w => w.element.classList.remove('active'));
+            if (state.windows[appId]) {
+                state.windows[appId].element.classList.add('active');
+                state.windows[appId].element.style.zIndex = ++state.windowZIndex;
+                state.activeWindow = appId;
+                document.getElementById('appName').textContent = state.windows[appId].app.name;
+            }
+        }
+
+        function makeDraggable(windowEl, appId) {
+            const header = windowEl.querySelector('.window-header');
+            let isDragging = false;
+            let currentX, currentY, initialX, initialY;
+
+            header.addEventListener('mousedown', dragStart);
+
+            function dragStart(e) {
+                if (e.target.closest('.window-control')) return;
+                
+                initialX = e.clientX - windowEl.offsetLeft;
+                initialY = e.clientY - windowEl.offsetTop;
+                isDragging = true;
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', dragEnd);
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                windowEl.style.left = currentX + 'px';
+                windowEl.style.top = Math.max(28, currentY) + 'px';
+            }
+
+            function dragEnd() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', dragEnd);
+            }
+        }
+
+        function makeResizable(windowEl) {
+            // Simplified resize - can be expanded for corner/edge resizing
+        }
+
+        function updateDockIcons() {
+            document.querySelectorAll('.dock-icon').forEach(icon => {
+                const appId = icon.dataset.app;
+                if (state.windows[appId]) {
+                    icon.classList.add('active');
+                } else {
+                    icon.classList.remove('active');
+                }
+            });
+        }
+
+        // Finder Functions
+        function renderFinderContent(container) {
+            const content = container.querySelector('#finderContent');
+            const files = state.fileSystem[state.currentFolder] || [];
+            content.innerHTML = '';
+
+            if (state.finderViewMode === 'grid') {
+                content.style.display = 'grid';
+                content.style.gridTemplateColumns = 'repeat(auto-fill, minmax(100px, 1fr))';
+
+                files.forEach(file => {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'file-item';
+                    fileDiv.title = `${file.name}\n${file.type === 'folder' ? file.items + ' items' : file.size}\nModified: ${file.modified}`;
+                    fileDiv.innerHTML = `
+                        <div class="file-icon">${file.icon}</div>
+                        <div class="file-name">${file.name}</div>
+                    `;
+                    content.appendChild(fileDiv);
+                });
+            } else {
+                content.style.display = 'block';
+                content.style.gridTemplateColumns = 'none';
+
+                files.forEach(file => {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.style.cssText = 'display: flex; align-items: center; padding: 8px 16px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer;';
+                    fileDiv.onmouseenter = function() { this.style.background = 'rgba(0,0,0,0.03)'; };
+                    fileDiv.onmouseleave = function() { this.style.background = 'transparent'; };
+                    fileDiv.innerHTML = `
+                        <div style="font-size: 24px; width: 40px;">${file.icon}</div>
+                        <div style="flex: 1; margin-left: 12px;">
+                            <div style="font-size: 13px; font-weight: 500;">${file.name}</div>
+                            <div style="font-size: 11px; color: #666;">Modified: ${file.modified}</div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; width: 100px; text-align: right;">
+                            ${file.type === 'folder' ? file.items + ' items' : file.size}
+                        </div>
+                    `;
+                    content.appendChild(fileDiv);
+                });
+            }
+        }
+
+        function changeFinderFolder(folderName) {
+            state.currentFolder = folderName;
+            if (state.windows['finder']) {
+                const contentDiv = state.windows['finder'].element.querySelector(`#content-finder`);
+                apps.finder.render(contentDiv);
+            }
+        }
+
+        function toggleFinderView() {
+            state.finderViewMode = state.finderViewMode === 'grid' ? 'list' : 'grid';
+            if (state.windows['finder']) {
+                const contentDiv = state.windows['finder'].element.querySelector(`#content-finder`);
+                apps.finder.render(contentDiv);
+            }
+        }
+
+        function finderGoBack() {
+            const folders = ['Documents', 'Downloads', 'Desktop', 'Pictures'];
+            const currentIndex = folders.indexOf(state.currentFolder);
+            if (currentIndex > 0) {
+                changeFinderFolder(folders[currentIndex - 1]);
+            }
+        }
+
+        function finderGoForward() {
+            const folders = ['Documents', 'Downloads', 'Desktop', 'Pictures'];
+            const currentIndex = folders.indexOf(state.currentFolder);
+            if (currentIndex < folders.length - 1) {
+                changeFinderFolder(folders[currentIndex + 1]);
+            }
+        }
+
+        // Terminal Commands
+        function executeTerminalCommand(command, container) {
+            const output = document.createElement('div');
+            output.className = 'terminal-line';
+            output.innerHTML = `<span class="terminal-prompt">guest@cloudos:~$</span> ${command}`;
+            
+            const inputLine = container.querySelector('.terminal-input-line');
+            container.insertBefore(output, inputLine);
+
+            const result = document.createElement('div');
+            result.className = 'terminal-line';
+
+            const parts = command.split(' ');
+            const cmd = parts[0].toLowerCase();
+            const args = parts.slice(1);
+
+            switch (cmd) {
+                case 'help':
+                    result.innerHTML = `
+                        <div style="color: #00aaff;">Available commands:</div>
+                        <div>  help       - Show this help message</div>
+                        <div>  ls         - List files and directories</div>
+                        <div>  pwd        - Print working directory</div>
+                        <div>  cd [dir]   - Change directory</div>
+                        <div>  cat [file] - Display file contents</div>
+                        <div>  date       - Show current date and time</div>
+                        <div>  whoami     - Show current user</div>
+                        <div>  hostname   - Display system hostname</div>
+                        <div>  uptime     - Show system uptime</div>
+                        <div>  df         - Display disk space usage</div>
+                        <div>  ps         - Show running processes</div>
+                        <div>  top        - Display system resource usage</div>
+                        <div>  echo [text]- Print text to terminal</div>
+                        <div>  clear      - Clear terminal screen</div>
+                        <div>  uname      - Show system information</div>
+                        <div>  ifconfig   - Display network configuration</div>
+                        <div>  ping [host]- Ping a host</div>
+                        <div>  history    - Show command history</div>
+                        <div>  python     - Start Python interpreter</div>
+                        <div>  node       - Start Node.js REPL</div>
+                        <div>  git status - Show git repository status</div>
+                        <div>  npm -v     - Show npm version</div>
+                    `;
+                    break;
+                case 'ls':
+                    if (args[0] === '-la' || args[0] === '-l') {
+                        result.innerHTML = `
+                            <div>total 8</div>
+                            <div>drwxr-xr-x  6 guest  staff   192 Oct 17 12:00 Documents</div>
+                            <div>drwxr-xr-x  4 guest  staff   128 Oct 17 11:45 Downloads</div>
+                            <div>drwxr-xr-x  5 guest  staff   160 Oct 17 10:30 Desktop</div>
+                            <div>drwxr-xr-x  8 guest  staff   256 Oct 17 09:15 Pictures</div>
+                            <div>drwxr-xr-x  3 guest  staff    96 Oct 16 14:20 Music</div>
+                            <div>drwxr-xr-x  2 guest  staff    64 Oct 15 16:50 Videos</div>
+                        `;
+                    } else {
+                        result.innerHTML = '<div style="color: #00aaff;">Documents  Downloads  Desktop  Pictures  Music  Videos</div>';
+                    }
+                    break;
+                case 'pwd':
+                    result.textContent = '/home/guest';
+                    break;
+                case 'cd':
+                    if (!args[0]) {
+                        result.textContent = '/home/guest';
+                    } else {
+                        result.innerHTML = `<div style="color: #00ff00;">Changed directory to: ${args[0]}</div>`;
+                    }
+                    break;
+                case 'cat':
+                    if (!args[0]) {
+                        result.innerHTML = '<span style="color: #ff6b6b;">Usage: cat [filename]</span>';
+                    } else {
+                        result.innerHTML = `<div style="color: #00aaff;">Content of ${args[0]}:</div><div>This is a sample file in CloudOS!</div><div>Edit files with your favorite editor.</div>`;
+                    }
+                    break;
+                case 'date':
+                    result.textContent = new Date().toString();
+                    break;
+                case 'whoami':
+                    result.textContent = 'guest';
+                    break;
+                case 'hostname':
+                    result.textContent = 'cloudos.local';
+                    break;
+                case 'uptime':
+                    result.textContent = 'up 2 days, 14:32, 1 user, load average: 0.52, 0.58, 0.59';
+                    break;
+                case 'df':
+                    result.innerHTML = `
+                        <div>Filesystem     Size   Used  Avail  Use%  Mounted on</div>
+                        <div>/dev/disk0    500GB  234GB 266GB  47%   /</div>
+                        <div>tmpfs          8.0GB  1.2GB 6.8GB  15%   /tmp</div>
+                    `;
+                    break;
+                case 'ps':
+                    result.innerHTML = `
+                        <div style="color: #00aaff;">  PID  TTY      TIME    CMD</div>
+                        <div>  1    tty1     00:00:01 init</div>
+                        <div>  245  tty1     00:00:00 bash</div>
+                        <div>  892  tty1     00:00:05 cloudos</div>
+                        <div>  1024 tty1     00:00:00 terminal</div>
+                    `;
+                    break;
+                case 'top':
+                    result.innerHTML = `
+                        <div style="color: #00ff00;">CloudOS System Monitor</div>
+                        <div>CPU Usage: 23% | Memory: 4.2GB / 16GB | Processes: 245</div>
+                        <div style="color: #00aaff;">PID   USER    CPU%  MEM%  COMMAND</div>
+                        <div>892   guest   12.3  8.5   cloudos</div>
+                        <div>1024  guest   3.2   2.1   terminal</div>
+                        <div>1156  guest   1.8   4.3   browser</div>
+                    `;
+                    break;
+                case 'echo':
+                    result.innerHTML = `<div style="color: #ffffff;">${args.join(' ')}</div>`;
+                    break;
+                case 'clear':
+                    container.querySelectorAll('.terminal-line').forEach(line => {
+                        if (!line.classList.contains('terminal-input-line')) {
+                            line.remove();
+                        }
+                    });
+                    return;
+                case 'uname':
+                    if (args[0] === '-a') {
+                        result.textContent = 'CloudOS 1.0.0 x86_64 GNU/Linux cloudos-kernel 5.15.0';
+                    } else {
+                        result.textContent = 'CloudOS 1.0.0 (Web-based Operating System)';
+                    }
+                    break;
+                case 'ifconfig':
+                    result.innerHTML = `
+                        <div style="color: #00aaff;">eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;</div>
+                        <div>      inet 192.168.1.100  netmask 255.255.255.0  broadcast 192.168.1.255</div>
+                        <div>      inet6 fe80::1  prefixlen 64  scopeid 0x20&lt;link&gt;</div>
+                        <div>      ether 00:0a:95:9d:68:16  txqueuelen 1000  (Ethernet)</div>
+                    `;
+                    break;
+                case 'ping':
+                    if (!args[0]) {
+                        result.innerHTML = '<span style="color: #ff6b6b;">Usage: ping [hostname]</span>';
+                    } else {
+                        result.innerHTML = `
+                            <div>PING ${args[0]} (93.184.216.34): 56 data bytes</div>
+                            <div>64 bytes from 93.184.216.34: icmp_seq=0 ttl=56 time=12.4 ms</div>
+                            <div>64 bytes from 93.184.216.34: icmp_seq=1 ttl=56 time=11.8 ms</div>
+                            <div style="color: #00ff00;">--- ${args[0]} ping statistics ---</div>
+                            <div>2 packets transmitted, 2 received, 0% packet loss</div>
+                        `;
+                    }
+                    break;
+                case 'history':
+                    result.innerHTML = state.terminalHistory.slice(-10).map((h, i) => `<div>  ${i+1}  ${h}</div>`).join('');
+                    break;
+                case 'python':
+                    if (args.length > 0) {
+                        result.innerHTML = `<div style="color: #00aaff;">Executing Python:</div><div style="color: #00ff00;">>>> ${args.join(' ')}</div><div>Output: ${eval(args.join(' '))}</div>`;
+                    } else {
+                        result.innerHTML = `
+                            <div style="color: #00aaff;">Python 3.11.0 (CloudOS Edition)</div>
+                            <div>Type "exit()" to exit Python mode</div>
+                            <div>>>> </div>
+                        `;
+                    }
+                    break;
+                case 'node':
+                    result.innerHTML = `
+                        <div style="color: #00aaff;">Welcome to Node.js v18.17.0</div>
+                        <div>Type ".help" for more information</div>
+                        <div>&gt; </div>
+                    `;
+                    break;
+                case 'git':
+                    if (args[0] === 'status') {
+                        result.innerHTML = `
+                            <div style="color: #00ff00;">On branch main</div>
+                            <div>Your branch is up to date with 'origin/main'.</div>
+                            <div>nothing to commit, working tree clean</div>
+                        `;
+                    } else {
+                        result.innerHTML = '<div>git version 2.39.2</div>';
+                    }
+                    break;
+                case 'npm':
+                    if (args[0] === '-v' || args[0] === '--version') {
+                        result.textContent = '9.6.7';
+                    } else {
+                        result.innerHTML = `<div style="color: #00aaff;">npm - Node Package Manager</div><div>Usage: npm [command]</div>`;
+                    }
+                    break;
+                default:
+                    result.innerHTML = `<span style="color: #ff6b6b;">Command not found: ${command}</span><div>Type 'help' for available commands</div>`;
+            }
+
+            container.insertBefore(result, inputLine);
+            state.terminalHistory.push(output.innerHTML, result.innerHTML);
+            
+            // Auto-scroll
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Calculator Functions
+        function calcNumber(num) {
+            if (state.calcDisplay === '0' || state.calcDisplay === 'Error') {
+                state.calcDisplay = num;
+            } else {
+                state.calcDisplay += num;
+            }
+            updateCalcDisplay();
+        }
+
+        function calcOperation(op) {
+            if (state.calcOperation && state.calcPrevValue !== null) {
+                calcEquals();
+            }
+            state.calcPrevValue = parseFloat(state.calcDisplay);
+            state.calcOperation = op;
+            state.calcDisplay = '0';
+        }
+
+        function calcEquals() {
+            if (state.calcPrevValue === null || !state.calcOperation) return;
+            
+            const current = parseFloat(state.calcDisplay);
+            let result;
+
+            switch (state.calcOperation) {
+                case '+': result = state.calcPrevValue + current; break;
+                case '-': result = state.calcPrevValue - current; break;
+                case '×': result = state.calcPrevValue * current; break;
+                case '÷': result = current !== 0 ? state.calcPrevValue / current : 'Error'; break;
+            }
+
+            state.calcDisplay = typeof result === 'number' ? result.toString() : result;
+            state.calcPrevValue = null;
+            state.calcOperation = null;
+            updateCalcDisplay();
+        }
+
+        function calcClear() {
+            state.calcDisplay = '0';
+            state.calcPrevValue = null;
+            state.calcOperation = null;
+            updateCalcDisplay();
+        }
+
+        function calcToggleSign() {
+            if (state.calcDisplay !== '0') {
+                state.calcDisplay = state.calcDisplay.startsWith('-') 
+                    ? state.calcDisplay.slice(1) 
+                    : '-' + state.calcDisplay;
+                updateCalcDisplay();
+            }
+        }
+
+        function calcPercent() {
+            state.calcDisplay = (parseFloat(state.calcDisplay) / 100).toString();
+            updateCalcDisplay();
+        }
+
+        function updateCalcDisplay() {
+            const display = document.getElementById('calcDisplay');
+            if (display) display.textContent = state.calcDisplay;
+        }
+
+        function calcMemory(operation) {
+            const current = parseFloat(state.calcDisplay);
+
+            switch (operation) {
+                case 'MC':
+                    state.calcMemory = 0;
+                    break;
+                case 'MR':
+                    state.calcDisplay = state.calcMemory.toString();
+                    break;
+                case 'M+':
+                    state.calcMemory += current;
+                    break;
+                case 'M-':
+                    state.calcMemory -= current;
+                    break;
+            }
+
+            updateCalcDisplay();
+            if (state.windows['calculator']) {
+                const contentDiv = state.windows['calculator'].element.querySelector(`#content-calculator`);
+                apps.calculator.render(contentDiv);
+            }
+        }
+
+        // Music Functions
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            if (state.windows['music']) {
+                const contentDiv = state.windows['music'].element.querySelector(`#content-music`);
+                apps.music.render(contentDiv);
+            }
+        }
+
+        function nextSong() {
+            state.currentSong = (state.currentSong + 1) % state.playlist.length;
+            if (state.windows['music']) {
+                const contentDiv = state.windows['music'].element.querySelector(`#content-music`);
+                apps.music.render(contentDiv);
+            }
+        }
+
+        function previousSong() {
+            state.currentSong = state.currentSong === 0 ? state.playlist.length - 1 : state.currentSong - 1;
+            if (state.windows['music']) {
+                const contentDiv = state.windows['music'].element.querySelector(`#content-music`);
+                apps.music.render(contentDiv);
+            }
+        }
+
+        function playSong(index) {
+            state.currentSong = index;
+            state.isPlaying = true;
+            if (state.windows['music']) {
+                const contentDiv = state.windows['music'].element.querySelector(`#content-music`);
+                apps.music.render(contentDiv);
+            }
+        }
+
+        function toggleShuffle() {
+            state.isShuffle = !state.isShuffle;
+            if (state.windows['music']) {
+                const contentDiv = state.windows['music'].element.querySelector(`#content-music`);
+                apps.music.render(contentDiv);
+            }
+        }
+
+        function toggleRepeat() {
+            state.isRepeat = !state.isRepeat;
+            if (state.windows['music']) {
+                const contentDiv = state.windows['music'].element.querySelector(`#content-music`);
+                apps.music.render(contentDiv);
+            }
+        }
+
+        function setVolume(value) {
+            state.volume = parseInt(value);
+            if (state.windows['music']) {
+                const contentDiv = state.windows['music'].element.querySelector(`#content-music`);
+                apps.music.render(contentDiv);
+            }
+        }
+
+        // Notes Functions
+        function selectNote(noteId) {
+            state.currentNote = noteId;
+            if (state.windows['notes']) {
+                const contentDiv = state.windows['notes'].element.querySelector(`#content-notes`);
+                apps.notes.render(contentDiv);
+            }
+        }
+
+        function createNewNote() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const newNote = {
+                id: state.nextNoteId++,
+                title: 'Untitled Note',
+                content: '',
+                date: dateStr
+            };
+            state.notes.unshift(newNote);
+            state.currentNote = newNote.id;
+            if (state.windows['notes']) {
+                const contentDiv = state.windows['notes'].element.querySelector(`#content-notes`);
+                apps.notes.render(contentDiv);
+                setTimeout(() => {
+                    document.getElementById('noteTitle').focus();
+                    document.getElementById('noteTitle').select();
+                }, 100);
+            }
+        }
+
+        function deleteCurrentNote() {
+            if (state.notes.length <= 1) {
+                alert('Cannot delete the last note!');
+                return;
+            }
+            if (confirm('Are you sure you want to delete this note?')) {
+                const index = state.notes.findIndex(n => n.id === state.currentNote);
+                state.notes.splice(index, 1);
+                state.currentNote = state.notes[0].id;
+                if (state.windows['notes']) {
+                    const contentDiv = state.windows['notes'].element.querySelector(`#content-notes`);
+                    apps.notes.render(contentDiv);
+                }
+            }
+        }
+
+        function formatNote(format) {
+            const textarea = document.getElementById('noteContent');
+            if (!textarea) return;
+
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+
+            let formattedText = selectedText;
+            if (format === 'bold') {
+                formattedText = `**${selectedText}**`;
+            } else if (format === 'italic') {
+                formattedText = `*${selectedText}*`;
+            } else if (format === 'list') {
+                formattedText = `• ${selectedText}`;
+            }
+
+            textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+
+            const note = state.notes.find(n => n.id === state.currentNote);
+            if (note) note.content = textarea.value;
+        }
+
+        // Safari Functions
+        function safariNavigate(query) {
+            const urlBar = document.getElementById('safariUrlBar');
+            const searchBox = document.getElementById('safariSearchBox');
+            const content = document.getElementById('safariContent');
+
+            if (!query || query.trim() === '') return;
+
+            // Check if it's a URL or a search query
+            const isUrl = query.includes('.') || query.startsWith('http');
+
+            let pageContent;
+            let pageUrl;
+            let pageTitle;
+
+            if (isUrl) {
+                const url = query.startsWith('http') ? query : 'https://' + query;
+                pageUrl = url;
+                pageTitle = query.replace('https://', '').replace('http://', '').split('/')[0];
+
+                urlBar.value = url;
+
+                // Load the actual website in an iframe
+                pageContent = `
+                    <div style="position: relative; width: 100%; height: 100%;">
+                        <iframe
+                            src="${url}"
+                            style="width: 100%; height: 100%; border: none; background: white;"
+                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                            onerror="handleIframeError()"
+                        ></iframe>
+                        <div style="position: absolute; top: 8px; right: 8px;">
+                            <button class="code-editor-btn" onclick="switchTab(${state.activeTab}); addNewTab();"
+                                    style="background: rgba(255,255,255,0.95); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                                <i class="fas fa-home"></i> Home
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Google search - open in iframe
+                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&igu=1`;
+                pageUrl = searchUrl;
+                pageTitle = `Search: ${query.substring(0, 20)}${query.length > 20 ? '...' : ''}`;
+
+                urlBar.value = searchUrl;
+
+                pageContent = `
+                    <div style="position: relative; width: 100%; height: 100%;">
+                        <iframe
+                            src="${searchUrl}"
+                            style="width: 100%; height: 100%; border: none; background: white;"
+                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
+                        ></iframe>
+                        <div style="position: absolute; top: 8px; right: 8px;">
+                            <button class="code-editor-btn" onclick="switchTab(${state.activeTab}); addNewTab();"
+                                    style="background: rgba(255,255,255,0.95); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                                <i class="fas fa-home"></i> Home
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Update the active tab with the new content
+            const activeTab = state.safariTabs.find(t => t.id === state.activeTab);
+            if (activeTab) {
+                activeTab.content = pageContent;
+                activeTab.url = pageUrl;
+                activeTab.title = pageTitle;
+                activeTab.isHome = false;
+            }
+
+            // Update the content display
+            content.innerHTML = pageContent;
+
+            // Update the tab bar
+            if (state.windows['safari']) {
+                const contentDiv = state.windows['safari'].element.querySelector(`#content-safari`);
+                apps.safari.render(contentDiv);
+            }
+
+            if (searchBox) searchBox.value = '';
+        }
+
+        function handleIframeError() {
+            const content = document.getElementById('safariContent');
+            content.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 40px;">
+                    <div style="font-size: 64px; margin-bottom: 24px; color: #ff6b6b;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h2 style="font-size: 24px; margin-bottom: 16px;">Unable to Load Website</h2>
+                    <p style="font-size: 16px; color: #666; text-align: center; max-width: 500px; margin-bottom: 32px;">
+                        This website cannot be displayed in an iframe due to security restrictions.
+                        Some websites block embedding for security reasons.
+                    </p>
+                    <button class="code-editor-btn" onclick="apps.safari.render(document.getElementById('content-safari'))"
+                            style="padding: 12px 24px; background: #007aff; color: white; border: none;">
+                        <i class="fas fa-home"></i> Return Home
+                    </button>
+                </div>
+            `;
+        }
+
+        function safariGoBack() {
+            if (state.windows['safari']) {
+                const contentDiv = state.windows['safari'].element.querySelector(`#content-safari`);
+                apps.safari.render(contentDiv);
+            }
+        }
+
+        function safariGoForward() {
+            // Placeholder for forward navigation
+        }
+
+        function safariReload() {
+            if (state.windows['safari']) {
+                const contentDiv = state.windows['safari'].element.querySelector(`#content-safari`);
+                apps.safari.render(contentDiv);
+            }
+        }
+
+        // Tab Management Functions
+        function addNewTab() {
+            const newTab = {
+                id: state.nextTabId++,
+                title: 'New Tab',
+                url: '',
+                isHome: true,
+                content: ''
+            };
+            state.safariTabs.push(newTab);
+            state.activeTab = newTab.id;
+
+            if (state.windows['safari']) {
+                const contentDiv = state.windows['safari'].element.querySelector(`#content-safari`);
+                apps.safari.render(contentDiv);
+            }
+        }
+
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+
+            if (state.windows['safari']) {
+                const contentDiv = state.windows['safari'].element.querySelector(`#content-safari`);
+                apps.safari.render(contentDiv);
+            }
+        }
+
+        function closeTab(tabId) {
+            if (state.safariTabs.length === 1) return; // Don't close the last tab
+
+            const tabIndex = state.safariTabs.findIndex(t => t.id === tabId);
+            state.safariTabs.splice(tabIndex, 1);
+
+            // If we closed the active tab, switch to another tab
+            if (state.activeTab === tabId) {
+                const newIndex = Math.min(tabIndex, state.safariTabs.length - 1);
+                state.activeTab = state.safariTabs[newIndex].id;
+            }
+
+            if (state.windows['safari']) {
+                const contentDiv = state.windows['safari'].element.querySelector(`#content-safari`);
+                apps.safari.render(contentDiv);
+            }
+        }
+
+        // Mail Functions
+        function selectEmail(emailId) {
+            const email = state.emails.find(e => e.id === emailId);
+            if (email) {
+                email.read = true;
+                state.currentEmail = emailId;
+            }
+
+            if (state.windows['mail']) {
+                const contentDiv = state.windows['mail'].element.querySelector(`#content-mail`);
+                apps.mail.render(contentDiv);
+            }
+        }
+
+        function changeEmailFolder(folder) {
+            state.emailFolder = folder;
+
+            if (state.windows['mail']) {
+                const contentDiv = state.windows['mail'].element.querySelector(`#content-mail`);
+                apps.mail.render(contentDiv);
+            }
+        }
+
+        function toggleStar(emailId) {
+            const email = state.emails.find(e => e.id === emailId);
+            if (email) {
+                email.starred = !email.starred;
+            }
+
+            if (state.windows['mail']) {
+                const contentDiv = state.windows['mail'].element.querySelector(`#content-mail`);
+                apps.mail.render(contentDiv);
+            }
+        }
+
+        function deleteEmail(emailId) {
+            const email = state.emails.find(e => e.id === emailId);
+            if (email && confirm('Move this email to trash?')) {
+                email.folder = 'trash';
+                const remainingEmails = state.emails.filter(e => e.folder === state.emailFolder);
+                if (remainingEmails.length > 0) {
+                    state.currentEmail = remainingEmails[0].id;
+                }
+            }
+
+            if (state.windows['mail']) {
+                const contentDiv = state.windows['mail'].element.querySelector(`#content-mail`);
+                apps.mail.render(contentDiv);
+            }
+        }
+
+        function composeEmail() {
+            alert('Compose email feature - Coming soon!\n\nThis would open a compose dialog where you can:\n- Enter recipient\n- Write subject\n- Compose message\n- Attach files');
+        }
+
+        // Photos Functions
+        function changePhotoAlbum(album) {
+            state.currentAlbum = album;
+
+            if (state.windows['photos']) {
+                const contentDiv = state.windows['photos'].element.querySelector(`#content-photos`);
+                apps.photos.render(contentDiv);
+            }
+        }
+
+        function togglePhotoView(mode) {
+            state.photoViewMode = mode;
+
+            if (state.windows['photos']) {
+                const contentDiv = state.windows['photos'].element.querySelector(`#content-photos`);
+                apps.photos.render(contentDiv);
+            }
+        }
+
+        function viewPhoto(photoName, index) {
+            alert(`Viewing Photo: ${photoName.charAt(0).toUpperCase() + photoName.slice(1)}\n\nPhoto ${index + 1}\nDate: Oct ${17 - Math.floor(index / 3)}, 2025\n\nThis would open the photo in full screen with options to:\n- Zoom in/out\n- Navigate to next/previous\n- Edit photo\n- Share\n- Add to album`);
+        }
+
+        function startSlideshow() {
+            alert('Slideshow Mode\n\nThis would start an automatic slideshow of all photos in the current album with:\n- Automatic transitions\n- Full-screen view\n- Background music\n- Transition effects');
+        }
+
+        // Code Editor Functions
+        function openCodeFile(index) {
+            state.currentCodeFile = index;
+
+            if (state.windows['code']) {
+                const contentDiv = state.windows['code'].element.querySelector(`#content-code`);
+                apps.code.render(contentDiv);
+            }
+        }
+
+        function toggleCodeTheme() {
+            state.codeTheme = state.codeTheme === 'dark' ? 'light' : 'dark';
+
+            if (state.windows['code']) {
+                const contentDiv = state.windows['code'].element.querySelector(`#content-code`);
+                apps.code.render(contentDiv);
+            }
+        }
+
+        function saveCodeFile() {
+            const currentFile = state.codeFiles[state.currentCodeFile];
+            alert(`File Saved!\n\n${currentFile.name} has been saved successfully.\n\nLanguage: ${currentFile.language}\nLines: ${currentFile.content.split('\n').length}`);
+        }
+
+        function runCode() {
+            const currentFile = state.codeFiles[state.currentCodeFile];
+            alert(`Running ${currentFile.name}...\n\nOutput:\n${'='.repeat(40)}\n\nCode execution simulated!\n\nThis would execute your ${currentFile.language} code in a sandboxed environment and show the output here.`);
+        }
+
+        function formatCode() {
+            alert('Code Formatted!\n\nYour code has been automatically formatted with:\n- Proper indentation\n- Consistent spacing\n- Standard conventions\n\nIn a real editor, this would use tools like Prettier, Black, or similar formatters.');
+        }
+
+        function getAvatarColor(id) {
+            const colors = [
+                '#667eea, #764ba2',
+                '#f093fb, #f5576c',
+                '#4facfe, #00f2fe',
+                '#43e97b, #38f9d7',
+                '#fa709a, #fee140'
+            ];
+            return colors[id % colors.length];
+        }
+
+        function selectMessage(msgId) {
+            // Placeholder for message selection
+            console.log('Selected message:', msgId);
+        }
+
+        // Messages Functions
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            if (input && input.value.trim()) {
+                state.currentChat.push({ text: input.value, sent: true });
+                input.value = '';
+                
+                if (state.windows['messages']) {
+                    const contentDiv = state.windows['messages'].element.querySelector(`#content-messages`);
+                    apps.messages.render(contentDiv);
+                }
+            }
+        }
+
+        // Spotlight
+        function toggleSpotlight() {
+            const spotlight = document.getElementById('spotlight');
+            const isActive = spotlight.classList.contains('active');
+            
+            if (isActive) {
+                spotlight.classList.remove('active');
+                document.getElementById('spotlightInput').value = '';
+                document.getElementById('spotlightResults').innerHTML = '';
+            } else {
+                spotlight.classList.add('active');
+                document.getElementById('spotlightInput').focus();
+            }
+        }
+
+        document.getElementById('spotlightInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const results = document.getElementById('spotlightResults');
+            
+            if (!query) {
+                results.innerHTML = '';
+                return;
+            }
+
+            const matches = Object.entries(apps).filter(([id, app]) => 
+                app.name.toLowerCase().includes(query)
+            );
+
+            results.innerHTML = matches.map(([id, app]) => `
+                <div class="spotlight-result" onclick="createWindow('${id}'); toggleSpotlight();">
+                    <div class="spotlight-result-icon">${app.icon}</div>
+                    <div class="spotlight-result-info">
+                        <div class="spotlight-result-title">${app.name}</div>
+                        <div class="spotlight-result-subtitle">Application</div>
+                    </div>
+                </div>
+            `).join('');
+        });
+
+        // Clock
+        function updateMenuClock() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            document.getElementById('menuClock').textContent = time;
+        }
+
+        setInterval(updateMenuClock, 1000);
+        updateMenuClock();
+
+        // Show welcome notification on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const notif = document.getElementById('notification');
+                notif.classList.add('show');
+                setTimeout(() => notif.classList.remove('show'), 4000);
+            }, 500);
+        });
+
+        // Dock Click Events
+        document.querySelectorAll('.dock-icon').forEach(icon => {
+            icon.addEventListener('click', () => {
+                const appId = icon.dataset.app;
+                if (state.windows[appId]) {
+                    if (state.windows[appId].element.style.display === 'none') {
+                        state.windows[appId].element.style.display = 'flex';
+                        focusWindow(appId);
+                    } else {
+                        minimizeWindow(appId);
+                    }
+                } else {
+                    createWindow(appId);
+                }
+            });
+        });
+
+        // Search Button
+        document.getElementById('searchBtn').addEventListener('click', toggleSpotlight);
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.metaKey || e.ctrlKey) {
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    toggleSpotlight();
+                }
+            }
+            if (e.key === 'Escape') {
+                const spotlight = document.getElementById('spotlight');
+                if (spotlight.classList.contains('active')) {
+                    toggleSpotlight();
+                }
+            }
+        });
+
+        // Context Menu
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const menu = document.getElementById('contextMenu');
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            menu.classList.add('show');
+        });
+
+        document.addEventListener('click', () => {
+            document.getElementById('contextMenu').classList.remove('show');
+        });
+
+
+        // Click outside spotlight to close
+        document.addEventListener('click', (e) => {
+            const spotlight = document.getElementById('spotlight');
+            if (spotlight.classList.contains('active') && !spotlight.contains(e.target) && e.target.id !== 'searchBtn') {
+                toggleSpotlight();
+            }
+        });
+    </script>
+</body>
+</html>
